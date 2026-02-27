@@ -330,7 +330,7 @@ return [
             'icon' => 'fas fa-fw fa-tachometer-alt',
         ],
         [
-            'text' => 'Student Courses',
+            'text' => 'Courses',
             'route' => 'student.courses',
             'icon' => 'fas fa-fw fa-user',
         ],
@@ -344,9 +344,15 @@ return [
         ],
 
          [
-            'text' => 'Student Attendence',
+            'text' => 'Attendence',
             'route' => 'student.attendence',
             'icon' => 'fas fa-fw fa-user-check',
+        ],
+
+         [
+            'text' => 'Date Sheet',
+            'route' => 'student.datesheet',
+            'icon' => 'fas fa-fw fa-calendar-day',
         ],
     ],
 

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceModel;
+use App\Models\DateSheet;
 use App\Models\StudentClassesCoursesModel;
 use App\Models\StudentModel;
 use App\Models\TeacherClasses;
 use App\Models\TimeTableMOdel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -240,6 +242,125 @@ class StudentController extends Controller
         ]));
     }
 
+    public function datesheet()
+    {
+        $data = $this->resolveStudentDashboardData();
+
+        // dd($data);
+        return view('admin.datesheet.index', array_merge($data, [
+            'dateSheets' => collect(),
+            'selectedTerm' => null,
+        ]));
+    }
+
+    public function datesheetData(Request $request)
+    {
+        // dd($request->all());
+        $selectedTerm = $request->query('term');
+        $selectedTerm = in_array((string) $selectedTerm, ['1', '2'], true) ? (int) $selectedTerm : null;
+
+        if ($selectedTerm === null) {
+            return response()->json([
+                'rows' => [],
+                'message' => 'Please select a term.',
+            ]);
+        }
+
+        $data = $this->resolveStudentDashboardData();
+        $assignedCourses = $data['assignedCourses'] ?? collect();
+
+        if ($assignedCourses->isEmpty()) {
+            return response()->json([
+                'rows' => [],
+                'message' => 'No courses are assigned yet.',
+            ]);
+        }
+
+        $dateSheets = $this->resolveDateSheetsForAssignedCourses($assignedCourses, $selectedTerm);
+
+        $rows = $dateSheets->values()->map(function ($sheet, $index) {
+            $dateLabel = $sheet->date ? \Carbon\Carbon::parse($sheet->date)->format('d M Y') : 'N/A';
+            $courseCode = $sheet->course->course_code ?? ($sheet->paper_code ?? 'N/A');
+            $courseTitle = $sheet->course->course_title ?? ($sheet->paper_title ?? '');
+
+            return [
+                'sr' => $index + 1,
+                'date' => $dateLabel,
+                'course' => trim($courseCode . ($courseTitle !== '' ? ' - ' . $courseTitle : '')),
+                'paper' => trim(($sheet->paper_code ?? 'N/A') . (! empty($sheet->paper_title) ? ' - ' . $sheet->paper_title : '')),
+                'term' => $sheet->slip_term_label,
+                'type' => $sheet->paper_type_label,
+                'class' => $sheet->class->class_name ?? 'N/A',
+                'section' => $sheet->class_section ?: 'N/A',
+                'time' => ($sheet->time_from ?? 'N/A') . ' - ' . ($sheet->time_to ?? 'N/A'),
+                'room' => $sheet->room ?? 'N/A',
+            ];
+        });
+
+        return response()->json([
+            'rows' => $rows,
+            'message' => $rows->isEmpty() ? 'No date sheet found for selected term.' : null,
+        ]);
+    }
+
+    private function resolveDateSheetsForAssignedCourses($assignedCourses, int $selectedTerm)
+    {
+        $courseKeys = $assignedCourses
+            ->map(fn ($course) => [
+                'class_id' => (int) $course->class_id,
+                'course_id' => (int) $course->course_id,
+                'session_id' => (int) $course->session_id,
+                'section' => Str::lower(trim((string) ($course->student_section ?? ''))),
+            ])
+            ->unique(fn ($item) => implode('|', [$item['class_id'], $item['course_id'], $item['session_id'], $item['section']]))
+            ->values();
+
+        return DateSheet::query()
+            ->select([
+                'date_sheet_id',
+                'session_id',
+                'class_id',
+                'class_section',
+                'slip_term',
+                'course_id',
+                'paper_code',
+                'paper_title',
+                'paper_type',
+                'date',
+                'time_from',
+                'time_to',
+                'room',
+            ])
+            ->with([
+                'class:class_id,class_name',
+                'course:course_id,course_code,course_title',
+                'session:session_id,session_type,session_year,session_timing',
+            ])
+            ->where(function ($query) use ($courseKeys) {
+                foreach ($courseKeys as $key) {
+                    $query->orWhere(function ($dateSheetQuery) use ($key) {
+                        $dateSheetQuery
+                            ->where('class_id', $key['class_id'])
+                            ->where('course_id', $key['course_id'])
+                            ->where('session_id', $key['session_id']);
+
+                        if ($key['section'] !== '') {
+                            $dateSheetQuery->where(function ($sectionQuery) use ($key) {
+                                $sectionQuery->whereRaw('LOWER(TRIM(class_section)) = ?', [$key['section']])
+                                    ->orWhereNull('class_section')
+                                    ->orWhere('class_section', '');
+                            });
+                        }
+                    });
+                }
+            })
+            ->where('slip_term', $selectedTerm)
+            ->orderBy('date')
+            ->orderBy('time_from')
+            ->orderBy('course_id')
+            ->get();
+    }
+
     private function resolveStudentDashboardData(): array
     {
         $studentLogin = Auth::user();
@@ -277,9 +398,14 @@ class StudentController extends Controller
                     'student_timing_shift',
                     'student_currunt_semester',
                     'student_current_session',
+                    'student_joining_session',
+                    'joining_session_id',
                     'primary_email',
                 ])
-                ->with('session:session_id,session_type,session_year,session_timing')
+                ->with([
+                    'session:session_id,session_type,session_year,session_timing',
+                    'joiningSession:session_id,session_type,session_year,session_timing',
+                ])
                 ->when(
                     ! empty($candidateStudentIds),
                     fn ($query) => $query->whereIn('student_id', $candidateStudentIds),
@@ -323,9 +449,14 @@ class StudentController extends Controller
                                 'student_timing_shift',
                                 'student_currunt_semester',
                                 'student_current_session',
+                                'student_joining_session',
+                                'joining_session_id',
                                 'primary_email',
                             ])
-                            ->with('session:session_id,session_type,session_year,session_timing')
+                            ->with([
+                                'session:session_id,session_type,session_year,session_timing',
+                                'joiningSession:session_id,session_type,session_year,session_timing',
+                            ])
                             ->where('student_id', $matchedStudent->student_id)
                             ->first();
                     }
@@ -431,9 +562,9 @@ class StudentController extends Controller
         $registeredCoursesCount = $assignedCourses->count();
         $currentClass = $assignedCourses->first()?->class?->class_name ?? 'N/A';
         $currentSemester = $student->student_currunt_semester ?? 'N/A';
-        $currentSession = $student?->session
-            ? trim(($student->session->session_type ?? '') . ' ' . ($student->session->session_year ?? '') . ' ' . ($student->session->session_timing ?? ''))
-            : 'N/A';
+        $currentSession = $student?->joiningSession
+            ? trim(($student->joiningSession->session_type ?? '') . ' ' . ($student->joiningSession->session_year ?? '') . ' ' . ($student->joiningSession->session_timing ?? ''))
+            : ($student?->student_joining_session ?? 'N/A');
 
         return compact(
             'student',

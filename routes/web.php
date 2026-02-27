@@ -12,3 +12,5 @@ Route::get('/home', [App\Http\Controllers\StudentController::class, 'index'])->n
 Route::get('/admin/student-courses', [App\Http\Controllers\StudentController::class, 'viewcources'])->name('student.courses');
 Route::get('/timetable', [App\Http\Controllers\StudentController::class, 'timetable'])->name('student.timetable');
 Route::get('/attendence', [App\Http\Controllers\StudentController::class, 'attendence'])->name('student.attendence');
+Route::get('/date-sheet', [App\Http\Controllers\StudentController::class, 'datesheet'])->name('student.datesheet');
+Route::get('/date-sheet/data', [App\Http\Controllers\StudentController::class, 'datesheetData'])->name('student.datesheet.data');
