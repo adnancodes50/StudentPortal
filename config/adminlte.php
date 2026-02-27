@@ -345,7 +345,7 @@ return [
 
          [
             'text' => 'Student Attendence',
-            'url' => 'attendence',
+            'route' => 'student.attendence',
             'icon' => 'fas fa-fw fa-user-check',
         ],
     ],

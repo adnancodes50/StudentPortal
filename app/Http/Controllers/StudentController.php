@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceModel;
 use App\Models\StudentClassesCoursesModel;
 use App\Models\StudentModel;
 use App\Models\TeacherClasses;
@@ -96,6 +97,146 @@ class StudentController extends Controller
 
         return view('admin.timetable.index', array_merge($data, [
             'timeTable' => $timeTable,
+        ]));
+    }
+
+    public function attendence()
+    {
+        $data = $this->resolveStudentDashboardData();
+        $assignedCourses = $data['assignedCourses'] ?? collect();
+        $student = $data['student'] ?? null;
+        $attendances = collect();
+        $lectureNumbers = range(1, 32);
+        $attendanceSummary = collect();
+
+        if ($student && $assignedCourses->isNotEmpty()) {
+            $courseKeys = $assignedCourses
+                ->map(fn ($course) => [
+                    'class_id' => (int) $course->class_id,
+                    'course_id' => (int) $course->course_id,
+                    'session_id' => (int) $course->session_id,
+                    'section' => Str::lower(trim((string) ($course->student_section ?? ''))),
+                ])
+                ->unique(fn ($item) => implode('|', [$item['class_id'], $item['course_id'], $item['session_id'], $item['section']]))
+                ->values();
+
+            $attendances = AttendanceModel::query()
+                ->select([
+                    'student_attendance_id',
+                    'student_id',
+                    'class_id',
+                    'course_id',
+                    'session_id',
+                    'section',
+                    'lec_no',
+                    'status',
+                    'type_status',
+                    'creation_date',
+                    'created_by',
+                ])
+                ->with([
+                    'class:class_id,class_name',
+                    'course:course_id,course_code,course_title',
+                    'session:session_id,session_type,session_year,session_timing',
+                    'createdBy:id,name',
+                ])
+                ->where('student_id', (int) $student->student_id)
+                ->where(function ($query) use ($courseKeys) {
+                    foreach ($courseKeys as $key) {
+                        $query->orWhere(function ($attendanceQuery) use ($key) {
+                            $attendanceQuery
+                                ->where('class_id', $key['class_id'])
+                                ->where('course_id', $key['course_id'])
+                                ->where('session_id', $key['session_id']);
+
+                            if ($key['section'] !== '') {
+                                $attendanceQuery->where(function ($sectionQuery) use ($key) {
+                                    $sectionQuery->whereRaw('LOWER(TRIM(section)) = ?', [$key['section']])
+                                        ->orWhereNull('section')
+                                        ->orWhere('section', '');
+                                });
+                            }
+                        });
+                    }
+                })
+                ->orderByDesc('creation_date')
+                ->orderByDesc('student_attendance_id')
+                ->get();
+        }
+
+        if ($attendances->isNotEmpty()) {
+            $attendanceSummary = $attendances
+                ->groupBy(function ($item) {
+                    return implode('|', [
+                        (int) $item->class_id,
+                        (int) $item->course_id,
+                        (int) $item->session_id,
+                        Str::lower(trim((string) ($item->section ?? ''))),
+                    ]);
+                })
+                ->values()
+                ->map(function ($group) use ($lectureNumbers) {
+                    $first = $group->first();
+                    $byLecture = $group
+                        ->sortByDesc('creation_date')
+                        ->sortByDesc('student_attendance_id')
+                        ->groupBy(fn ($item) => (int) ($item->lec_no ?? 0))
+                        ->map(fn ($items) => $items->first());
+
+                    $lectureStatus = [];
+                    $presentCount = 0;
+                    $absentCount = 0;
+                    $takenCount = 0;
+
+                    foreach ($lectureNumbers as $lectureNo) {
+                        $record = $byLecture->get($lectureNo);
+
+                        if (! $record) {
+                            $lectureStatus[$lectureNo] = null;
+                            continue;
+                        }
+
+                        $status = (int) $record->status;
+                        $isPresent = in_array($status, [1], true);
+                        $isAbsent = in_array($status, [0, 2], true);
+
+                        if ($isPresent) {
+                            $lectureStatus[$lectureNo] = 'P';
+                            $presentCount++;
+                            $takenCount++;
+                        } elseif ($isAbsent) {
+                            $lectureStatus[$lectureNo] = 'A';
+                            $absentCount++;
+                            $takenCount++;
+                        } else {
+                            $lectureStatus[$lectureNo] = null;
+                        }
+                    }
+
+                    $percentage = $takenCount > 0
+                        ? (int) round(($presentCount / $takenCount) * 100)
+                        : 0;
+
+                    return [
+                        'course' => $first->course,
+                        'class' => $first->class,
+                        'session' => $first->session,
+                        'section' => $first->section,
+                        'lecture_status' => $lectureStatus,
+                        'taken_count' => $takenCount,
+                        'present_count' => $presentCount,
+                        'absent_count' => $absentCount,
+                        'percentage' => $percentage,
+                    ];
+                })
+                ->sortBy(fn ($item) => Str::lower((string) ($item['course']?->course_title ?? '')))
+                ->values();
+        }
+
+        return view('admin.attendence.index', array_merge($data, [
+            'attendances' => $attendances,
+            'lectureNumbers' => $lectureNumbers,
+            'attendanceSummary' => $attendanceSummary,
         ]));
     }
 
