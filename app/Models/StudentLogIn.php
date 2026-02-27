@@ -48,4 +48,12 @@ class StudentLogIn extends Authenticatable
     {
         return $this->belongsTo(StudentModel::class, 'student_id', 'student_id');
     }
+
+    /**
+     * AdminLTE user menu profile URL.
+     */
+    public function adminlte_profile_url()
+    {
+        return route('student.profile');
+    }
 }

@@ -26,7 +26,7 @@
             <div class="col-xl-3 col-md-6 col-12 mb-3">
                 <div class="card stat-card stat-card-class h-100">
                     <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-university"></i></div>
+                        <div class="stat-icon"><i class="fas fa-school"></i></div>
                         <div>
                             <h4 class="mb-1 font-weight-bold text-truncate">{{ $currentClass }}</h4>
                             <p class="mb-0">Current Class</p>
@@ -72,7 +72,7 @@
             background-image:
                 linear-gradient(rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.90)),
                 url('{{ asset('images/logo/logo.png') }}');
-            background-size: cover;
+            background-size: contain;
             background-position: center center;
             background-repeat: no-repeat;
             background-attachment: scroll;
@@ -88,13 +88,14 @@
 
         .stat-card {
             border: 0;
+            /* margin-top: 20; */
             border-radius: 12px;
             box-shadow: 0 8px 18px rgba(26, 39, 62, 0.12);
             overflow: hidden;
         }
 
         .stat-card .card-body {
-            min-height: 120px;
+            min-height: 150px;
             display: flex;
             align-items: center;
             gap: 14px;
@@ -103,12 +104,24 @@
         .stat-icon {
             width: 44px;
             height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            flex: 0 0 44px;
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon i {
+            font-size: 1.05rem;
+            line-height: 1;
+            width: 1em;
+            height: 1em;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
         }
 
         .stat-card h4 {

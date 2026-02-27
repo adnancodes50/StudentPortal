@@ -253,6 +253,11 @@ class StudentController extends Controller
         ]));
     }
 
+    public function profile()
+    {
+        return view('admin.profile.index', $this->resolveStudentDashboardData());
+    }
+
     public function datesheetData(Request $request)
     {
         // dd($request->all());
