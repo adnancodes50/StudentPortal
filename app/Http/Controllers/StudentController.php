@@ -11,7 +11,9 @@ use App\Models\TimeTableMOdel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class StudentController extends Controller
 {
@@ -256,6 +258,61 @@ class StudentController extends Controller
     public function profile()
     {
         return view('admin.profile.index', $this->resolveStudentDashboardData());
+    }
+
+    public function resetCredentials(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $validated = $request->validate([
+            'old_username' => ['required', 'string', 'max:255'],
+            'new_username' => [
+                'required',
+                'string',
+                'max:255',
+                'different:old_username',
+                'unique:students_logins,student_login_name,' . $user->getKey() . ',student_login_id',
+            ],
+            'previous_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:6', 'different:previous_password', 'confirmed'],
+        ]);
+
+        $currentUsername = (string) ($user->student_login_name ?? '');
+
+        if (! hash_equals($currentUsername, (string) $validated['old_username'])) {
+            return back()->withErrors([
+                'old_username' => 'Old username is incorrect.',
+            ])->withInput();
+        }
+
+        $plainPassword = (string) $validated['previous_password'];
+        $storedPassword = (string) ($user->student_login_password ?? '');
+        $passwordMatches = hash_equals($storedPassword, $plainPassword);
+
+        if (! $passwordMatches) {
+            try {
+                $passwordMatches = Hash::check($plainPassword, $storedPassword);
+            } catch (RuntimeException $e) {
+                $passwordMatches = false;
+            }
+        }
+
+        if (! $passwordMatches) {
+            return back()->withErrors([
+                'previous_password' => 'Previous password is incorrect.',
+            ])->withInput();
+        }
+
+        $user->student_login_name = $validated['new_username'];
+        $user->student_login_password = $validated['new_password'];
+        $user->updation_date = now();
+        $user->save();
+
+        return back()->with('status', 'Username and password updated successfully.');
     }
 
     public function datesheetData(Request $request)

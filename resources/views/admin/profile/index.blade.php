@@ -46,16 +46,34 @@
                     <h3 class="card-title">Account Status Form</h3>
                 </div>
                 <div class="card-body">
-                    <form action="javascript:void(0);">
+                    @if (session('status'))
+                        <div class="alert alert-success">
+                            {{ session('status') }}
+                        </div>
+                    @endif
+
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0 pl-3">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form action="{{ route('student.profile.reset') }}" method="POST">
+                        @csrf
                         <div class="form-group">
                             <label for="old_username">Old Username</label>
                             <input type="text" class="form-control" id="old_username" name="old_username"
-                                value="{{ auth()->user()->student_login_name ?? '' }}">
+                                value="{{ old('old_username', auth()->user()->student_login_name ?? '') }}">
                         </div>
 
                         <div class="form-group">
                             <label for="new_username">New Username</label>
                             <input type="text" class="form-control" id="new_username" name="new_username"
+                                value="{{ old('new_username') }}"
                                 placeholder="Enter new username">
                         </div>
 
@@ -73,11 +91,11 @@
 
                         <div class="form-group">
                             <label for="confirm_password">Confirm Password</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                            <input type="password" class="form-control" id="confirm_password" name="new_password_confirmation"
                                 placeholder="Confirm new password">
                         </div>
 
-                        <button type="button" class="btn btn-info">Update Status</button>
+                        <button type="submit" class="btn btn-info">Update Status</button>
                     </form>
                 </div>
             </div>
