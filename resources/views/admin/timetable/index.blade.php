@@ -38,9 +38,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($timeTable as $slot)
+                            @foreach($timeTable as $index => $slot)
                                 <tr>
-                                    <td>{{ $slot->Slot + 1 ?? 'N/A' }}</td>
+                                    <td>{{ $index + 1 }}</td>
                                     <td>{{ $slot->day ?? 'N/A' }}</td>
                                     {{-- <td>{{ $slot->lec_no ?? 'N/A' }}</td> --}}
                                     <td>
