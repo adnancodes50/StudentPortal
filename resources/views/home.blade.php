@@ -63,9 +63,19 @@
 @section('css')
     <style>
         .dashboard-wrap {
-            background: linear-gradient(135deg, #f5f7fa 0%, #eef2f7 100%);
-            border-radius: 12px;
-            padding: 12px;
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.90)),
+                url('{{ asset('images/logo/logo.png') }}');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: scroll;
         }
 
         .dashboard-subtitle {

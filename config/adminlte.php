@@ -323,7 +323,7 @@ return [
         //     'label' => 4,
         //     'label_color' => 'success',
         // ],
-        ['header' => 'Student Portal', 'classes' => 'font-weight-bold text-uppercase text-sm'],
+        ['header' => 'Student Portal ', 'classes' => 'font-weight-bold text-uppercase text-md'],
         [
             'text' => 'dashboard',
             'url' => 'home',
