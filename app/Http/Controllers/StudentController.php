@@ -263,56 +263,187 @@ class StudentController extends Controller
     public function resetCredentials(Request $request)
     {
         $user = Auth::user();
+        $isAjax = $request->expectsJson() || $request->ajax();
 
         if (! $user) {
+            if ($isAjax) {
+                return response()->json([
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+
             return redirect()->route('login');
         }
 
         $validated = $request->validate([
-            'old_username' => ['required', 'string', 'max:255'],
+            'old_username' => ['nullable', 'string', 'max:255'],
             'new_username' => [
-                'required',
+                'nullable',
                 'string',
                 'max:255',
-                'different:old_username',
                 'unique:students_logins,student_login_name,' . $user->getKey() . ',student_login_id',
             ],
-            'previous_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:6', 'different:previous_password', 'confirmed'],
+            'new_email' => ['nullable', 'email', 'max:255'],
+            'previous_password' => ['nullable', 'string'],
+            'new_password' => ['nullable', 'string', 'min:6', 'different:previous_password', 'confirmed'],
         ]);
 
-        $currentUsername = (string) ($user->student_login_name ?? '');
+        $student = $user->student;
+        $currentUsername = trim((string) ($user->student_login_name ?? ''));
+        $currentEmail = trim((string) ($student->primary_email ?? ''));
+        $newUsername = trim((string) ($validated['new_username'] ?? ''));
+        $newEmail = trim((string) ($validated['new_email'] ?? ''));
+        $oldUsername = trim((string) ($validated['old_username'] ?? ''));
+        $previousPassword = (string) ($validated['previous_password'] ?? '');
+        $newPassword = (string) ($validated['new_password'] ?? '');
+        $passwordConfirmation = (string) $request->input('new_password_confirmation', '');
 
-        if (! hash_equals($currentUsername, (string) $validated['old_username'])) {
+        $wantsUsernameChange = $newUsername !== '';
+        $wantsEmailChange = $newEmail !== '';
+        $wantsPasswordChange = $previousPassword !== '' || $newPassword !== '' || $passwordConfirmation !== '';
+
+        if (! $wantsUsernameChange && ! $wantsEmailChange && ! $wantsPasswordChange) {
+            if ($isAjax) {
+                return response()->json([
+                    'message' => 'Validation Error',
+                    'errors' => [
+                        'form' => ['Please fill at least one field to update.'],
+                    ],
+                ], 422);
+            }
+
             return back()->withErrors([
-                'old_username' => 'Old username is incorrect.',
+                'form' => 'Please fill at least one field to update.',
             ])->withInput();
         }
 
-        $plainPassword = (string) $validated['previous_password'];
-        $storedPassword = (string) ($user->student_login_password ?? '');
-        $passwordMatches = hash_equals($storedPassword, $plainPassword);
+        $updatedItems = [];
 
-        if (! $passwordMatches) {
-            try {
-                $passwordMatches = Hash::check($plainPassword, $storedPassword);
-            } catch (RuntimeException $e) {
-                $passwordMatches = false;
+        if ($wantsUsernameChange) {
+            if ($oldUsername === '' || ! hash_equals($currentUsername, $oldUsername)) {
+                if ($isAjax) {
+                    return response()->json([
+                        'message' => 'Validation Error',
+                        'errors' => [
+                            'old_username' => ['Old username is incorrect.'],
+                        ],
+                    ], 422);
+                }
+
+                return back()->withErrors([
+                    'old_username' => 'Old username is incorrect.',
+                ])->withInput();
+            }
+
+            if (strcasecmp($newUsername, $currentUsername) === 0) {
+                if ($isAjax) {
+                    return response()->json([
+                        'message' => 'Validation Error',
+                        'errors' => [
+                            'new_username' => ['New username must be different from current username.'],
+                        ],
+                    ], 422);
+                }
+
+                return back()->withErrors([
+                    'new_username' => 'New username must be different from current username.',
+                ])->withInput();
+            }
+
+            $user->student_login_name = $newUsername;
+            $updatedItems[] = 'username';
+        }
+
+        if ($wantsEmailChange) {
+            if (! $student) {
+                if ($isAjax) {
+                    return response()->json([
+                        'message' => 'Validation Error',
+                        'errors' => [
+                            'new_email' => ['Unable to resolve student record for email update.'],
+                        ],
+                    ], 422);
+                }
+
+                return back()->withErrors([
+                    'new_email' => 'Unable to resolve student record for email update.',
+                ])->withInput();
+            }
+
+            if (strcasecmp($newEmail, $currentEmail) !== 0) {
+                $student->primary_email = $newEmail;
+                $student->updated_date = now();
+                $student->save();
+                $updatedItems[] = 'email';
             }
         }
 
-        if (! $passwordMatches) {
-            return back()->withErrors([
-                'previous_password' => 'Previous password is incorrect.',
-            ])->withInput();
+        if ($wantsPasswordChange) {
+            if ($previousPassword === '' || $newPassword === '' || $passwordConfirmation === '') {
+                if ($isAjax) {
+                    return response()->json([
+                        'message' => 'Validation Error',
+                        'errors' => [
+                            'new_password' => ['Previous password, new password, and confirm password are required for password update.'],
+                        ],
+                    ], 422);
+                }
+
+                return back()->withErrors([
+                    'new_password' => 'Previous password, new password, and confirm password are required for password update.',
+                ])->withInput();
+            }
+
+            $storedPassword = (string) ($user->student_login_password ?? '');
+            $passwordMatches = hash_equals($storedPassword, $previousPassword);
+
+            if (! $passwordMatches) {
+                try {
+                    $passwordMatches = Hash::check($previousPassword, $storedPassword);
+                } catch (RuntimeException $e) {
+                    $passwordMatches = false;
+                }
+            }
+
+            if (! $passwordMatches) {
+                if ($isAjax) {
+                    return response()->json([
+                        'message' => 'Validation Error',
+                        'errors' => [
+                            'previous_password' => ['Previous password is incorrect.'],
+                        ],
+                    ], 422);
+                }
+
+                return back()->withErrors([
+                    'previous_password' => 'Previous password is incorrect.',
+                ])->withInput();
+            }
+
+            $user->student_login_password = $newPassword;
+            $updatedItems[] = 'password';
         }
 
-        $user->student_login_name = $validated['new_username'];
-        $user->student_login_password = $validated['new_password'];
-        $user->updation_date = now();
-        $user->save();
+        if (! empty($updatedItems)) {
+            $user->updation_date = now();
+            $user->save();
+        }
 
-        return back()->with('status', 'Username and password updated successfully.');
+        if (empty($updatedItems)) {
+            $message = 'No changes detected.';
+        } elseif (count($updatedItems) === 1) {
+            $message = ucfirst($updatedItems[0]) . ' updated successfully.';
+        } else {
+            $message = ucfirst(implode(', ', array_slice($updatedItems, 0, -1))) . ' and ' . end($updatedItems) . ' updated successfully.';
+        }
+
+        if ($isAjax) {
+            return response()->json([
+                'message' => $message,
+            ]);
+        }
+
+        return back()->with('status', $message);
     }
 
     public function datesheetData(Request $request)
