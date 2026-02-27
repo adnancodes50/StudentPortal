@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\StudentClassesCoursesModel;
 use App\Models\StudentModel;
 use App\Models\TeacherClasses;
+use App\Models\TimeTableMOdel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,6 +26,77 @@ class StudentController extends Controller
     public function viewcources()
     {
         return view('admin.student-courses.index', $this->resolveStudentDashboardData());
+    }
+
+    public function timetable()
+    {
+        $data = $this->resolveStudentDashboardData();
+        $assignedCourses = $data['assignedCourses'] ?? collect();
+        $timeTable = collect();
+
+        // dd($timeTable);
+
+        if ($assignedCourses->isNotEmpty()) {
+            $courseKeys = $assignedCourses
+                ->map(function ($course) {
+                    return [
+                        'class_id' => (int) $course->class_id,
+                        'course_id' => (int) $course->course_id,
+                        'session_id' => (int) $course->session_id,
+                        'section' => Str::lower(trim((string) ($course->student_section ?? ''))),
+                    ];
+                })
+                ->unique(fn ($item) => implode('|', [$item['class_id'], $item['course_id'], $item['session_id'], $item['section']]))
+                ->values();
+
+            $timeTable = TimeTableMOdel::query()
+                ->select([
+                    'id',
+                    'class_id',
+                    'course_id',
+                    'section',
+                    'lec_no',
+                    'room_id',
+                    'day',
+                    'session_id',
+                    'time_from',
+                    'time_to',
+                ])
+                ->with([
+                    'class:class_id,class_name',
+                    'course:course_id,course_code,course_title',
+                    'room:room_id,room_no',
+                    'session:session_id,session_type,session_year,session_timing',
+                ])
+                ->where(function ($query) use ($courseKeys) {
+                    foreach ($courseKeys as $key) {
+                        $query->orWhere(function ($courseQuery) use ($key) {
+                            $courseQuery
+                                ->where('class_id', $key['class_id'])
+                                ->where('course_id', $key['course_id'])
+                                ->where('session_id', $key['session_id']);
+
+                            if ($key['section'] !== '') {
+                                $courseQuery->where(function ($sectionQuery) use ($key) {
+                                    $sectionQuery->whereRaw('LOWER(TRIM(section)) = ?', [$key['section']])
+                                        ->orWhereNull('section')
+                                        ->orWhere('section', '');
+                                });
+                            }
+                        });
+                    }
+                })
+                ->orderByRaw("FIELD(LOWER(day), 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')")
+                ->orderBy('time_from')
+                ->orderBy('lec_no')
+                ->get();
+        }
+
+        // dd($timeTable);
+
+        return view('admin.timetable.index', array_merge($data, [
+            'timeTable' => $timeTable,
+        ]));
     }
 
     private function resolveStudentDashboardData(): array

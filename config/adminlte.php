@@ -337,7 +337,7 @@ return [
 
         [
             'text' => 'Time Table',
-            'url' => '/timetable',
+            'route' => 'student.timetable',
             'icon' => 'fas fa-fw fa-calendar-alt',
         ],
     ],
