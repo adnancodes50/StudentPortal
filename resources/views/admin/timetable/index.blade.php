@@ -21,36 +21,39 @@
                 <div class="card-header">
                     <h3 class="card-title">Weekly Schedule</h3>
                 </div>
-                <div class="card-body table-responsive p-0">
-                    <table class="table table-hover text-nowrap mb-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
                         <thead>
                             <tr>
+                                <td>IDs</td>
                                 <th>Day</th>
-                                <th>Lecture #</th>
+                                {{-- <th>Lecture #</th> --}}
                                 <th>Course</th>
-                                <th>Class</th>
+                                <th class="d-none d-md-table-cell">Class</th>
                                 <th>Section</th>
-                                <th>Room</th>
+                                <th class="d-none d-md-table-cell">Room</th>
                                 <th>Time</th>
-                                <th>Session</th>
+                                <th class="d-none d-lg-table-cell">Session</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($timeTable as $slot)
                                 <tr>
+                                    <td>{{ $slot->Slot + 1 ?? 'N/A' }}</td>
                                     <td>{{ $slot->day ?? 'N/A' }}</td>
-                                    <td>{{ $slot->lec_no ?? 'N/A' }}</td>
+                                    {{-- <td>{{ $slot->lec_no ?? 'N/A' }}</td> --}}
                                     <td>
                                         {{ $slot->course->course_code ?? 'N/A' }}
                                         @if(!empty($slot->course->course_title))
                                             - {{ $slot->course->course_title }}
                                         @endif
                                     </td>
-                                    <td>{{ $slot->class->class_name ?? 'N/A' }}</td>
+                                    <td class="d-none d-md-table-cell">{{ $slot->class->class_name ?? 'N/A' }}</td>
                                     <td>{{ $slot->section ?: 'N/A' }}</td>
-                                    <td>{{ $slot->room->room_no ?? 'N/A' }}</td>
+                                    <td class="d-none d-md-table-cell">{{ $slot->room->room_no ?? 'N/A' }}</td>
                                     <td>{{ $slot->time_from ?? 'N/A' }} - {{ $slot->time_to ?? 'N/A' }}</td>
-                                    <td>
+                                    <td class="d-none d-lg-table-cell">
                                         @if($slot->session)
                                             {{ trim(($slot->session->session_type ?? '') . ' ' . ($slot->session->session_year ?? '') . ' ' . ($slot->session->session_timing ?? '')) }}
                                         @else
@@ -60,8 +63,12 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                    </table>
+                        </table>
+                    </div>
                 </div>
+                {{-- <div class="card-footer text-muted py-2">
+                    On small screens, swipe horizontally to view full table.
+                </div> --}}
             </div>
         @endif
     </div>
