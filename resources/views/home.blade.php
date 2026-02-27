@@ -5,7 +5,7 @@
 @section('content_header')
     <div class="d-flex flex-wrap align-items-center justify-content-between">
         <h1 class="m-0 font-weight-bold">Student Dashboard</h1>
-        <span class="dashboard-subtitle">Academic Overview</span>
+        {{-- <span class="dashboard-subtitle">Academic Overview</span> --}}
     </div>
 @stop
 
