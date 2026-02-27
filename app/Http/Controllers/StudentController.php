@@ -1,0 +1,236 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\StudentClassesCoursesModel;
+use App\Models\StudentModel;
+use App\Models\TeacherClasses;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class StudentController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    public function index()
+    {
+        return view('home', $this->resolveStudentDashboardData());
+    }
+
+
+    public function viewcources()
+    {
+        return view('admin.student-courses.index', $this->resolveStudentDashboardData());
+    }
+
+    private function resolveStudentDashboardData(): array
+    {
+        $studentLogin = Auth::user();
+        $student = null;
+
+        $assignedCourses = collect();
+        $studentFullName = 'N/A';
+        $registeredCoursesCount = 0;
+        $currentClass = 'N/A';
+        $currentSemester = 'N/A';
+        $currentSession = 'N/A';
+        $candidateStudentIds = [];
+
+        if ($studentLogin) {
+            if (! empty($studentLogin->student_id)) {
+                $candidateStudentIds[] = (int) $studentLogin->student_id;
+            }
+
+            if (! empty($studentLogin->student_login_id)) {
+                $candidateStudentIds[] = (int) $studentLogin->student_login_id;
+            }
+
+            $candidateStudentIds = array_values(array_unique(array_filter($candidateStudentIds)));
+
+            // Always fetch student details from StudentModel.
+            $student = StudentModel::query()
+                ->select([
+                    'student_id',
+                    'student_first_name',
+                    'student_last_name',
+                    'arid_reg_no',
+                    'student_cnic',
+                    'student_gender',
+                    'student_section',
+                    'student_timing_shift',
+                    'student_currunt_semester',
+                    'student_current_session',
+                    'primary_email',
+                ])
+                ->with('session:session_id,session_type,session_year,session_timing')
+                ->when(
+                    ! empty($candidateStudentIds),
+                    fn ($query) => $query->whereIn('student_id', $candidateStudentIds),
+                    fn ($query) => $query->whereRaw('1 = 0')
+                )
+                ->first();
+
+            // Fallback: if student_id mapping is wrong, try resolve by login name.
+            if (! $student && ! empty($studentLogin->student_login_name)) {
+                $loginToken = Str::of($studentLogin->student_login_name)
+                    ->lower()
+                    ->replaceMatches('/[^a-z]/', '')
+                    ->toString();
+
+                if ($loginToken !== '') {
+                    $matchedStudent = StudentModel::query()
+                        ->select([
+                            'students.student_id',
+                            DB::raw('COUNT(scc.students_classe_course_id) as courses_count'),
+                        ])
+                        ->leftJoin('students_classes_courses as scc', 'scc.student_id', '=', 'students.student_id')
+                        ->where(function ($query) use ($loginToken) {
+                            $query->whereRaw('LOWER(students.student_first_name) LIKE ?', ["%{$loginToken}%"])
+                                ->orWhereRaw('LOWER(students.student_last_name) LIKE ?', ["%{$loginToken}%"])
+                                ->orWhereRaw("LOWER(CONCAT(students.student_first_name, ' ', students.student_last_name)) LIKE ?", ["%{$loginToken}%"]);
+                        })
+                        ->groupBy('students.student_id')
+                        ->orderByDesc('courses_count')
+                        ->first();
+
+                    if ($matchedStudent) {
+                        $student = StudentModel::query()
+                            ->select([
+                                'student_id',
+                                'student_first_name',
+                                'student_last_name',
+                                'arid_reg_no',
+                                'student_cnic',
+                                'student_gender',
+                                'student_section',
+                                'student_timing_shift',
+                                'student_currunt_semester',
+                                'student_current_session',
+                                'primary_email',
+                            ])
+                            ->with('session:session_id,session_type,session_year,session_timing')
+                            ->where('student_id', $matchedStudent->student_id)
+                            ->first();
+                    }
+                }
+            }
+
+            if ($student && ! in_array((int) $student->student_id, $candidateStudentIds, true)) {
+                $candidateStudentIds[] = (int) $student->student_id;
+            }
+
+            $assignedCourses = StudentClassesCoursesModel::query()
+                ->select([
+                    'students_classe_course_id',
+                    'student_id',
+                    'student_section',
+                    'class_id',
+                    'session_id',
+                    'course_id',
+                    'created_at',
+                ])
+                ->with([
+                    'course' => fn ($query) => $query
+                        ->select([
+                            'course_id',
+                            'course_code',
+                            'course_title',
+                            'course_credit_hours',
+                            'created_by',
+                        ])
+                        ->with('createdBy:id,name,email'),
+                    'class:class_id,class_name',
+                    'session:session_id,session_type,session_year,session_timing',
+                ])
+                ->when(
+                    ! empty($candidateStudentIds),
+                    fn ($query) => $query->whereIn('student_id', $candidateStudentIds),
+                    fn ($query) => $query->whereRaw('1 = 0')
+                )
+                ->orderByDesc('session_id')
+                ->orderBy('class_id')
+                ->orderBy('course_id')
+                ->get();
+
+            if ($assignedCourses->isNotEmpty()) {
+                $teacherAssignments = TeacherClasses::query()
+                    ->select([
+                        'teacher_course_id',
+                        'teacher_id',
+                        'classs_id',
+                        'course_id',
+                        'session_id',
+                        'class_section',
+                    ])
+                    ->with('teacher:teacher_id,teacher_first_name,teacher_last_name,email')
+                    ->whereIn('classs_id', $assignedCourses->pluck('class_id')->filter()->unique()->values()->all())
+                    ->whereIn('course_id', $assignedCourses->pluck('course_id')->filter()->unique()->values()->all())
+                    ->whereIn('session_id', $assignedCourses->pluck('session_id')->filter()->unique()->values()->all())
+                    ->get();
+
+                $teacherByExactKey = $teacherAssignments->keyBy(function ($item) {
+                    return implode('|', [
+                        (int) $item->classs_id,
+                        (int) $item->course_id,
+                        (int) $item->session_id,
+                        Str::lower(trim((string) $item->class_section)),
+                    ]);
+                });
+
+                $teacherByBaseKey = $teacherAssignments->keyBy(function ($item) {
+                    return implode('|', [
+                        (int) $item->classs_id,
+                        (int) $item->course_id,
+                        (int) $item->session_id,
+                    ]);
+                });
+
+                $assignedCourses = $assignedCourses->map(function ($course) use ($teacherByExactKey, $teacherByBaseKey) {
+                    $baseKey = implode('|', [
+                        (int) $course->class_id,
+                        (int) $course->course_id,
+                        (int) $course->session_id,
+                    ]);
+
+                    $exactKey = $baseKey . '|' . Str::lower(trim((string) ($course->student_section ?? '')));
+
+                    $teacherAssignment = $teacherByExactKey->get($exactKey) ?? $teacherByBaseKey->get($baseKey);
+
+                    $course->resolved_teacher_name = $teacherAssignment?->teacher?->teacher_name ?? 'Not Found';
+                    $course->resolved_teacher_email = $teacherAssignment?->teacher?->email ?? 'Not Found';
+
+                    return $course;
+                });
+            }
+        }
+
+        $studentFullName = trim(($student->student_first_name ?? '') . ' ' . ($student->student_last_name ?? '')) ?: 'N/A';
+
+        if ($studentLogin && $studentFullName !== 'N/A') {
+            // Feed AdminLTE user menu with the resolved student full name.
+            $studentLogin->name = $studentFullName;
+        }
+
+        $registeredCoursesCount = $assignedCourses->count();
+        $currentClass = $assignedCourses->first()?->class?->class_name ?? 'N/A';
+        $currentSemester = $student->student_currunt_semester ?? 'N/A';
+        $currentSession = $student?->session
+            ? trim(($student->session->session_type ?? '') . ' ' . ($student->session->session_year ?? '') . ' ' . ($student->session->session_timing ?? ''))
+            : 'N/A';
+
+        return compact(
+            'student',
+            'studentLogin',
+            'assignedCourses',
+            'studentFullName',
+            'registeredCoursesCount',
+            'currentClass',
+            'currentSemester',
+            'currentSession'
+        );
+    }
+}
