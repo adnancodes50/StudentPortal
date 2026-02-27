@@ -323,7 +323,7 @@ return [
         //     'label' => 4,
         //     'label_color' => 'success',
         // ],
-        ['header' => 'Student Portal'],
+        ['header' => 'Student Portal', 'classes' => 'font-weight-bold text-uppercase text-sm'],
         [
             'text' => 'dashboard',
             'url' => 'home',
@@ -335,10 +335,18 @@ return [
             'icon' => 'fas fa-fw fa-user',
         ],
 
+
+
         [
             'text' => 'Time Table',
             'route' => 'student.timetable',
             'icon' => 'fas fa-fw fa-calendar-alt',
+        ],
+
+         [
+            'text' => 'Student Attendence',
+            'url' => 'attendence',
+            'icon' => 'fas fa-fw fa-user-check',
         ],
     ],
 
