@@ -15,3 +15,4 @@ Route::get('/date-sheet', [App\Http\Controllers\StudentController::class, 'dates
 Route::get('/date-sheet/data', [App\Http\Controllers\StudentController::class, 'datesheetData'])->name('student.datesheet.data');
 Route::get('/student/profile', [App\Http\Controllers\StudentController::class, 'profile'])->name('student.profile');
 Route::post('/student/profile/reset-credentials', [App\Http\Controllers\StudentController::class, 'resetCredentials'])->name('student.profile.reset');
+Route::get('/course-evaluation', [App\Http\Controllers\CourcesEvalutionController::class, 'index'])->name('student.course-evaluation');

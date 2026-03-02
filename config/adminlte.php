@@ -335,7 +335,7 @@ return [
 
         [
             'text' => 'Cources Evaluation',
-            'route' => 'student.datesheet',
+            'url' => '/course-evaluation',
             'icon' => 'fas fa-fw fa-chart-line',
         ],
 
