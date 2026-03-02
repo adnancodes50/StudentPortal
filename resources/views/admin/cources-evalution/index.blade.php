@@ -48,7 +48,6 @@
                                 <div class="col-md-3"><strong>Course:</strong> <span id="metaCourse">-</span></div>
                             </div>
                         </div>
-                        <small class="text-muted">Complete this page and click Next.</small>
                     </div>
                 </div>
 
