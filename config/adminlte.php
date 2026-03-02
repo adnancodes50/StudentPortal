@@ -331,6 +331,15 @@ return [
             'route' => 'student.datesheet',
             'icon' => 'fas fa-fw fa-calendar-day',
         ],
+
+
+        [
+            'text' => 'Cources Evaluation',
+            'route' => 'student.datesheet',
+            'icon' => 'fas fa-fw fa-chart-line',
+        ],
+
+
     ],
 
     /*
