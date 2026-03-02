@@ -68,7 +68,16 @@ public function courseEvaluationComments()
     return $this->hasMany(CourseEvaluationComment::class, 'course_id', 'course_id');
 }
 
-
+public function teacherEvaluationReports()
+{
+    return $this->hasMany(TeacherEvaluationReport::class, 'course_id', 'course_id');
 }
 
+public function evaluationComments()
+{
+    return $this->hasMany(EvaluationComment::class, 'course_id', 'course_id');
+}
+
+
+}
 

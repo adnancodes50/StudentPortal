@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EvaluationComment extends Model
 {
@@ -35,28 +36,28 @@ class EvaluationComment extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function student()
+    public function student(): BelongsTo
     {
-        return $this->belongsTo(Student::class, 'student_id');
+        return $this->belongsTo(StudentModel::class, 'student_id', 'student_id');
     }
 
-    public function teacher()
+    public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class, 'teacher_id');
+        return $this->belongsTo(TeacherModel::class, 'teacher_id', 'teacher_id');
     }
 
-    public function course()
+    public function course(): BelongsTo
     {
-        return $this->belongsTo(Course::class, 'course_id');
+        return $this->belongsTo(CoursesModel::class, 'course_id', 'course_id');
     }
 
-    public function session()
+    public function session(): BelongsTo
     {
-        return $this->belongsTo(Session::class, 'session_id');
+        return $this->belongsTo(Session::class, 'session_id', 'session_id');
     }
 
-    public function class()
+    public function classroom(): BelongsTo
     {
-        return $this->belongsTo(Classes::class, 'class_id');
+        return $this->belongsTo(ClassModel::class, 'class_id', 'class_id');
     }
 }

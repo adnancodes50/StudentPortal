@@ -144,6 +144,15 @@ public function courseEvaluationComments()
     return $this->hasMany(CourseEvaluationComment::class, 'student_id', 'student_id');
 }
 
+public function teacherEvaluationReports()
+{
+    return $this->hasMany(TeacherEvaluationReport::class, 'student_id', 'student_id');
+}
+
+public function evaluationComments()
+{
+    return $this->hasMany(EvaluationComment::class, 'student_id', 'student_id');
+}
 
 
 

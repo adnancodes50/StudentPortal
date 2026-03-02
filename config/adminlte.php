@@ -339,6 +339,12 @@ return [
             'icon' => 'fas fa-fw fa-chart-line',
         ],
 
+        [
+            'text' => 'Teacher Evaluation',
+            'url' => '/teacher-evaluation',
+            'icon' => 'fas fa-fw fa-chart-line',
+        ],
+
 
     ],
 
