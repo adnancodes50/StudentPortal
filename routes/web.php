@@ -18,4 +18,4 @@ Route::post('/student/profile/reset-credentials', [App\Http\Controllers\StudentC
 Route::get('/course-evaluation', [App\Http\Controllers\CourcesEvalutionController::class, 'index'])->name('student.course-evaluation');
 Route::post('/course-evaluation/submit', [App\Http\Controllers\CourcesEvalutionController::class, 'submit'])->name('student.course-evaluation.submit');
 Route::get('/teacher-evaluation', [App\Http\Controllers\TeacherEvalutionController::class, 'index'])->name('student.teacher-evaluation');
-
+Route::post('/teacher-evaluation/submit', [App\Http\Controllers\TeacherEvalutionController::class, 'submit'])->name('student.teacher-evaluation.submit');
