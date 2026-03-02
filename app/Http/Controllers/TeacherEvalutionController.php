@@ -103,6 +103,7 @@ class TeacherEvalutionController extends Controller
                 $teacherId = (int) ($teacherAssignment?->teacher_id ?? 0);
 
                 return [
+                    'assignment_id' => (int) $course->students_classe_course_id,
                     'teacher_id' => $teacherId,
                     'session_id' => (int) $course->session_id,
                     'class_id' => (int) $course->class_id,
@@ -119,12 +120,6 @@ class TeacherEvalutionController extends Controller
                 ];
             })
             ->filter(fn ($target) => $target['teacher_id'] > 0)
-            ->unique(fn ($target) => implode('|', [
-                $target['teacher_id'],
-                $target['session_id'],
-                $target['class_id'],
-                $target['course_id'],
-            ]))
             ->values();
 
         return view('admin.teacher-evalution.index', [
@@ -135,6 +130,10 @@ class TeacherEvalutionController extends Controller
 
     public function submit(Request $request)
     {
+        if ($request->filled('submissions_payload')) {
+            return $this->submitBatch($request);
+        }
+
         $validated = $request->validate([
             'teacher_id' => ['required', 'integer', 'min:1'],
             'session_id' => ['required', 'integer'],
@@ -188,6 +187,78 @@ class TeacherEvalutionController extends Controller
         });
 
         return back()->with('success', 'Teacher evaluation submitted successfully.');
+    }
+
+    private function submitBatch(Request $request)
+    {
+        $decoded = json_decode((string) $request->input('submissions_payload'), true);
+
+        if (! is_array($decoded) || empty($decoded)) {
+            return back()->withErrors([
+                'submissions_payload' => 'Invalid evaluation payload.',
+            ])->withInput();
+        }
+
+        DB::transaction(function () use ($decoded) {
+            foreach ($decoded as $submission) {
+                if (
+                    ! is_array($submission)
+                    || ! isset($submission['teacher_id'], $submission['session_id'], $submission['class_id'], $submission['course_id'], $submission['answers'])
+                    || ! is_array($submission['answers'])
+                    || empty($submission['answers'])
+                ) {
+                    continue;
+                }
+
+                $studentId = $this->resolveLoggedInStudentId([
+                    'class_id' => (int) $submission['class_id'],
+                    'course_id' => (int) $submission['course_id'],
+                    'session_id' => (int) $submission['session_id'],
+                ]);
+
+                if ($studentId <= 0) {
+                    continue;
+                }
+
+                foreach ($submission['answers'] as $answer) {
+                    $questionId = (int) ($answer['question_id'] ?? 0);
+                    $optionId = (int) ($answer['option_id'] ?? 0);
+
+                    if ($questionId <= 0 || $optionId <= 0) {
+                        continue;
+                    }
+
+                    TeacherEvaluationReport::create([
+                        'student_id' => $studentId,
+                        'teacher_id' => (int) $submission['teacher_id'],
+                        'session_id' => (int) $submission['session_id'],
+                        'classs_id' => (int) $submission['class_id'],
+                        'course_id' => (int) $submission['course_id'],
+                        'question_id' => $questionId,
+                        'selected_option_id' => $optionId,
+                    ]);
+                }
+
+                $comment = $submission['comment'] ?? [];
+                if (is_array($comment)) {
+                    $hasCommentData = collect($comment)->filter(fn ($value) => trim((string) $value) !== '')->isNotEmpty();
+
+                    if ($hasCommentData) {
+                        EvaluationComment::create([
+                            'student_id' => $studentId,
+                            'teacher_id' => (int) $submission['teacher_id'],
+                            'session_id' => (int) $submission['session_id'],
+                            'class_id' => (int) $submission['class_id'],
+                            'course_id' => (int) $submission['course_id'],
+                            'evaluation_comment_course' => $comment['evaluation_comment_course'] ?? null,
+                            'evaluation_comment_instructer' => $comment['evaluation_comment_instructer'] ?? null,
+                        ]);
+                    }
+                }
+            }
+        });
+
+        return back()->with('success', 'Teacher evaluations submitted successfully.');
     }
 
     private function resolveCandidateStudentIds()

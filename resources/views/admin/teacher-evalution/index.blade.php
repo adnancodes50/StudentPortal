@@ -3,142 +3,87 @@
 @section('title', 'Teacher Evaluation')
 
 @section('content_header')
-    <div class="eval-header">
-        <h1 class="m-0">Teacher Evaluation</h1>
-        <p class="mb-0">Please select one option for each question.</p>
-    </div>
+    <h1 class="m-0">Teacher Evaluation</h1>
 @stop
 
 @section('content')
     <div class="container-fluid">
-        @if (session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
+        @if(session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
-        @if ($errors->any())
+        @if($errors->any())
             <div class="alert alert-danger">
                 <ul class="mb-0 pl-3">
-                    @foreach ($errors->all() as $error)
+                    @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
         @endif
 
-        @if (($questions ?? collect())->isEmpty())
-            <div class="alert alert-warning">
-                No teacher evaluation questions found.
-            </div>
+        @if(($questions ?? collect())->isEmpty())
+            <div class="alert alert-warning">No teacher evaluation questions found.</div>
+        @elseif(($evaluationTargets ?? collect())->isEmpty())
+            <div class="alert alert-warning">No assigned course/teacher mapping found for your account.</div>
         @else
-            <form method="POST" action="{{ route('student.teacher-evaluation.submit') }}">
+            <form id="teacherEvaluationWizard" method="POST" action="{{ route('student.teacher-evaluation.submit') }}">
                 @csrf
+                <input type="hidden" name="submissions_payload" id="submissions_payload">
 
-                <div class="card eval-card mb-4">
+                <div class="card mb-3">
+                    <div class="card-header wizard-top d-flex align-items-center">
+                        <strong class="mb-0">Step by Step Evaluation</strong>
+                        <span id="stepCounter" class="badge badge-info  ml-auto"></span>
+                    </div>
                     <div class="card-body">
-                        @if (($evaluationTargets ?? collect())->isNotEmpty())
-                            <div class="form-group mb-0">
-                                <label class="eval-label" for="evaluation_target">Course / Class / Session / Teacher</label>
-                                <select class="form-control eval-select" id="evaluation_target" required>
-                                    <option value="">Select an assigned course</option>
-                                    @foreach ($evaluationTargets as $target)
-                                        <option
-                                            value="{{ $target['teacher_id'] }}|{{ $target['session_id'] }}|{{ $target['class_id'] }}|{{ $target['course_id'] }}"
-                                            data-teacher="{{ $target['teacher_id'] }}"
-                                            data-session="{{ $target['session_id'] }}"
-                                            data-class="{{ $target['class_id'] }}" data-course="{{ $target['course_id'] }}"
-                                            {{ old('teacher_id') == $target['teacher_id'] && old('session_id') == $target['session_id'] && old('class_id') == $target['class_id'] && old('course_id') == $target['course_id'] ? 'selected' : '' }}>
-                                            {{ $target['label'] }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                        <label class="font-weight-bold mb-2">Current Assignment</label>
+                        <div class="wizard-target mb-2">
+                            <div class="row">
+                                <div class="col-md-3"><strong>Teacher Name:</strong> <span id="metaTeacher">-</span></div>
+                                <div class="col-md-3"><strong>Class:</strong> <span id="metaClass">-</span></div>
+                                <div class="col-md-3"><strong>Session:</strong> <span id="metaSession">-</span></div>
+                                <div class="col-md-3"><strong>Course:</strong> <span id="metaCourse">-</span></div>
                             </div>
-                        @else
-                            <div class="alert alert-warning mb-0">
-                                No assigned course/teacher mapping found for your account.
-                                Please contact admin to assign teacher/class/session/course.
-                            </div>
-                        @endif
-
-                        <input type="hidden" name="teacher_id" id="teacher_id" value="{{ old('teacher_id') }}">
-                        <input type="hidden" name="session_id" id="session_id" value="{{ old('session_id') }}">
-                        <input type="hidden" name="class_id" id="class_id" value="{{ old('class_id') }}">
-                        <input type="hidden" name="course_id" id="course_id" value="{{ old('course_id') }}">
+                        </div>
+                        <small class="text-muted">Complete this page and click Next.</small>
                     </div>
                 </div>
 
-                <div class="card eval-card mb-4">
-                    {{-- <div class="card-header eval-legend">
-                        <span>Strongly Disagree</span>
-                        <span>Disagree</span>
-                        <span>Neutral</span>
-                        <span>Agree</span>
-                        <span>Strongly Agree</span>
-                    </div> --}}
+                <div class="card mb-3">
                     <div class="card-body">
-                        @foreach ($questions as $index => $question)
-                            <div class="question-item">
-                                <div class="question-title">
-                                    <span class="question-no">{{ $index + 1 }}</span>
-                                    <span>{{ rtrim($question->evaluation_question_title, '?') }}?</span>
+                        @foreach($questions as $index => $question)
+                            <div class="border rounded p-3 mb-3 question-item" data-question-id="{{ $question->evaluation_question_id }}">
+                                <div class="font-weight-bold mb-2">
+                                    {{ $index + 1 }}. {{ rtrim($question->evaluation_question_title, '?') }}?
                                 </div>
-
-                                <input type="hidden" name="answers[{{ $index }}][question_id]"
-                                    value="{{ $question->evaluation_question_id }}">
-
-                                <div class="option-grid">
-                                    @for ($option = 1; $option <= 5; $option++)
-                                        <label class="option-pill">
-                                            <input type="radio" name="answers[{{ $index }}][option_id]"
-                                                value="{{ $option }}" required
-                                                {{ (string) old("answers.$index.option_id") === (string) $option ? 'checked' : '' }}>
-                                            <span>
-                                                @if ($option === 1)
-                                                    Strongly Disagree
-                                                @elseif($option === 2)
-                                                    Disagree
-                                                @elseif($option === 3)
-                                                    Neutral
-                                                @elseif($option === 4)
-                                                    Agree
-                                                @else
-                                                    Strongly Agree
-                                                @endif
-                                            </span>
+                                <div class="d-grid gap-2 option-grid">
+                                    @foreach([1 => 'Strongly Disagree', 2 => 'Disagree', 3 => 'Neutral', 4 => 'Agree', 5 => 'Strongly Agree'] as $val => $label)
+                                        <label class="btn btn-outline-secondary text-left mb-0">
+                                            <input type="radio" class="mr-2" name="q_{{ $question->evaluation_question_id }}" value="{{ $val }}">
+                                            {{ $label }}
                                         </label>
-                                    @endfor
+                                    @endforeach
                                 </div>
                             </div>
                         @endforeach
                     </div>
                 </div>
 
-                <div class="card eval-card mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title">Additional Comments (Optional)</h3>
-                    </div>
+                <div class="card mb-3">
+                    <div class="card-header"><strong>Comments (Optional)</strong></div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Course Comment</label>
-                                    <textarea class="form-control" name="comment[evaluation_comment_course]" rows="4">{{ old('comment.evaluation_comment_course') }}</textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Instructor Comment</label>
-                                    <textarea class="form-control" name="comment[evaluation_comment_instructer]" rows="4">{{ old('comment.evaluation_comment_instructer') }}</textarea>
-                                </div>
-                            </div>
+                            <div class="col-md-6"><div class="form-group"><label>Course Comment</label><textarea id="c_evaluation_comment_course" class="form-control" rows="4"></textarea></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Instructor Comment</label><textarea id="c_evaluation_comment_instructer" class="form-control" rows="4"></textarea></div></div>
                         </div>
                     </div>
-                    <div class="card-footer text-right">
-                        <button type="submit" class="btn btn-primary px-4"
-                            {{ ($evaluationTargets ?? collect())->isEmpty() ? 'disabled' : '' }}>
-                            Submit Evaluation
-                        </button>
+                    <div class="card-footer d-flex align-items-center">
+                        <button type="button" id="prevBtn" class="btn btn-secondary">Previous</button>
+                        <div class="ml-auto d-flex align-items-center">
+                            <button type="button" id="nextBtn" class="btn btn-info ml-2">Next</button>
+                            <button type="button" id="finalSubmitBtn" class="btn btn-primary d-none ml-2">Submit All Evaluations</button>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -148,155 +93,168 @@
 
 @section('css')
     <style>
-        .eval-header {
-            padding: 8px 0;
-            color: #1f2933;
-            background: transparent;
-            border: 0;
-        }
-
-        .eval-header p {
-            color: #5f6c7b;
-            font-size: 0.9rem;
-            margin-top: 4px;
-        }
-
-        .eval-card {
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-        }
-
-        .eval-label {
-            font-weight: 700;
-            color: #212529;
-        }
-
-        .eval-select {
-            border: 1px solid #ced4da;
-            background-color: #fff;
-        }
-
-        .eval-legend {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(120px, 1fr));
-            gap: 8px;
-            font-size: 0.8rem;
-            color: #495057;
+        .wizard-top {
             background: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
         }
 
-        .question-item {
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 14px;
-            margin-bottom: 12px;
-            background: #fff;
-        }
-
-        .question-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .question-title {
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-            margin-bottom: 10px;
-            color: #212529;
+        .wizard-badge {
+            font-size: 0.8rem;
             font-weight: 600;
+            padding: 6px 10px;
         }
 
-        .question-no {
-            width: 24px;
-            height: 24px;
-            min-width: 24px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: #6c757d;
-            color: #fff;
-            font-size: 0.75rem;
-        }
-
-        .option-grid {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(140px, 1fr));
-            gap: 8px;
-        }
-
-        .option-pill input {
-            display: none;
-        }
-
-        .option-pill span {
-            display: block;
-            text-align: center;
-            padding: 8px 6px;
-            border-radius: 4px;
+        .wizard-target {
             border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 10px 12px;
             background: #fff;
-            color: #343a40;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.82rem;
-            transition: all 0.1s ease-in-out;
+            min-height: 42px;
+            font-weight: 500;
         }
 
-        .option-pill input:checked+span {
-            background: #0d6efd;
-            border-color: #0d6efd;
-            color: #fff;
-        }
-
-        @media (max-width: 768px) {
-            .eval-legend {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .option-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .option-grid { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 8px; }
+        @media (max-width: 768px) { .option-grid { grid-template-columns: 1fr; } }
     </style>
 @stop
 
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        (function() {
-            const targetSelect = document.getElementById('evaluation_target');
-            const teacherIdField = document.getElementById('teacher_id');
-            const sessionIdField = document.getElementById('session_id');
-            const classIdField = document.getElementById('class_id');
-            const courseIdField = document.getElementById('course_id');
+        (() => {
+            const targets = @json(($evaluationTargets ?? collect())->values());
+            if (!targets.length) return;
 
-            function syncFromSelect() {
-                if (!targetSelect) {
+            const questionIds = Array.from(document.querySelectorAll('.question-item')).map(el => Number(el.dataset.questionId));
+            const state = { current: 0, byStep: {} };
+
+            const stepCounter = document.getElementById('stepCounter');
+            const metaTeacher = document.getElementById('metaTeacher');
+            const metaClass = document.getElementById('metaClass');
+            const metaSession = document.getElementById('metaSession');
+            const metaCourse = document.getElementById('metaCourse');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const finalSubmitBtn = document.getElementById('finalSubmitBtn');
+
+            const commentIds = ['c_evaluation_comment_course', 'c_evaluation_comment_instructer'];
+
+            function readStepData() {
+                const answers = {};
+                for (const qid of questionIds) {
+                    const checked = document.querySelector(`input[name="q_${qid}"]:checked`);
+                    answers[qid] = checked ? Number(checked.value) : null;
+                }
+
+                const comment = {
+                    evaluation_comment_course: document.getElementById('c_evaluation_comment_course').value,
+                    evaluation_comment_instructer: document.getElementById('c_evaluation_comment_instructer').value,
+                };
+
+                return { answers, comment };
+            }
+
+            function validateCurrentStep() {
+                const data = readStepData();
+                const missing = questionIds.some(qid => !data.answers[qid]);
+                if (missing) {
+                    Swal.fire({ icon: 'warning', title: 'Incomplete', text: 'Please answer all questions before continuing.' });
+                    return false;
+                }
+                return true;
+            }
+
+            function saveCurrentStep() { state.byStep[state.current] = readStepData(); }
+
+            function loadCurrentStep() {
+                const target = targets[state.current];
+                const saved = state.byStep[state.current] || { answers: {}, comment: {} };
+
+                stepCounter.textContent = `Step ${state.current + 1} of ${targets.length}`;
+                const parts = (target.label || '').split('|').map(p => p.trim());
+                metaCourse.textContent = target.course_name || parts[0] || '-';
+                metaClass.textContent = target.class_name || parts[1] || '-';
+                metaSession.textContent = target.session_name || parts[2] || '-';
+                metaTeacher.textContent = target.teacher_name || parts[3] || '-';
+
+                for (const qid of questionIds) {
+                    const val = saved.answers[qid];
+                    const radios = document.querySelectorAll(`input[name="q_${qid}"]`);
+                    radios.forEach(r => { r.checked = Number(r.value) === Number(val); });
+                }
+
+                commentIds.forEach(id => {
+                    const key = id.replace('c_', '');
+                    document.getElementById(id).value = saved.comment[key] || '';
+                });
+
+                prevBtn.disabled = state.current === 0;
+                const isLast = state.current === targets.length - 1;
+                nextBtn.classList.toggle('d-none', isLast);
+                finalSubmitBtn.classList.toggle('d-none', !isLast);
+            }
+
+            prevBtn.addEventListener('click', () => {
+                saveCurrentStep();
+                if (state.current > 0) { state.current--; loadCurrentStep(); }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (!validateCurrentStep()) return;
+                saveCurrentStep();
+                if (state.current < targets.length - 1) { state.current++; loadCurrentStep(); }
+            });
+
+            finalSubmitBtn.addEventListener('click', () => {
+                if (!validateCurrentStep()) return;
+                saveCurrentStep();
+
+                let firstMissingStep = -1;
+                for (let idx = 0; idx < targets.length; idx++) {
+                    const step = state.byStep[idx];
+                    if (!step) {
+                        firstMissingStep = idx;
+                        break;
+                    }
+                    const hasMissingAnswer = questionIds.some(qid => !step.answers || !step.answers[qid]);
+                    if (hasMissingAnswer) {
+                        firstMissingStep = idx;
+                        break;
+                    }
+                }
+
+                if (firstMissingStep >= 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete',
+                        text: 'Please fill all teacher evaluations before submit.'
+                    });
+                    state.current = firstMissingStep;
+                    loadCurrentStep();
                     return;
                 }
 
-                const selected = targetSelect.options[targetSelect.selectedIndex];
-                teacherIdField.value = selected ? (selected.dataset.teacher || '') : '';
-                sessionIdField.value = selected ? (selected.dataset.session || '') : '';
-                classIdField.value = selected ? (selected.dataset.class || '') : '';
-                courseIdField.value = selected ? (selected.dataset.course || '') : '';
-            }
+                const submissions = targets.map((target, idx) => {
+                    const step = state.byStep[idx];
+                    return {
+                        teacher_id: target.teacher_id,
+                        session_id: target.session_id,
+                        class_id: target.class_id,
+                        course_id: target.course_id,
+                        answers: questionIds.map(qid => ({ question_id: qid, option_id: step.answers[qid] })),
+                        comment: step.comment,
+                    };
+                });
 
-            if (targetSelect) {
-                targetSelect.addEventListener('change', syncFromSelect);
-                syncFromSelect();
-            }
+                document.getElementById('submissions_payload').value = JSON.stringify(submissions);
+                document.getElementById('teacherEvaluationWizard').submit();
+            });
+
+            loadCurrentStep();
         })();
 
-        @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Submitted',
-                text: @json(session('success')),
-                confirmButtonText: 'OK'
-            });
+        @if(session('success'))
+            Swal.fire({ icon: 'success', title: 'Submitted', text: @json(session('success')), confirmButtonText: 'OK' });
         @endif
     </script>
 @stop
