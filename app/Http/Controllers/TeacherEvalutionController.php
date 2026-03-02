@@ -192,11 +192,36 @@ class TeacherEvalutionController extends Controller
     private function submitBatch(Request $request)
     {
         $decoded = json_decode((string) $request->input('submissions_payload'), true);
+        $requiredQuestionCount = EvaluationQuestion::query()->count();
 
         if (! is_array($decoded) || empty($decoded)) {
             return back()->withErrors([
                 'submissions_payload' => 'Invalid evaluation payload.',
             ])->withInput();
+        }
+
+        foreach ($decoded as $submission) {
+            if (
+                ! is_array($submission)
+                || ! isset($submission['answers'])
+                || ! is_array($submission['answers'])
+                || count($submission['answers']) < $requiredQuestionCount
+            ) {
+                return back()->withErrors([
+                    'submissions_payload' => 'Please fill all teacher evaluations before submit.',
+                ])->withInput();
+            }
+
+            foreach ($submission['answers'] as $answer) {
+                $questionId = (int) ($answer['question_id'] ?? 0);
+                $optionId = (int) ($answer['option_id'] ?? 0);
+
+                if ($questionId <= 0 || $optionId <= 0) {
+                    return back()->withErrors([
+                        'submissions_payload' => 'Please fill all teacher evaluations before submit.',
+                    ])->withInput();
+                }
+            }
         }
 
         DB::transaction(function () use ($decoded) {

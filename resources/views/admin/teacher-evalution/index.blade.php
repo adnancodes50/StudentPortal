@@ -8,7 +8,7 @@
 
 @section('content')
     <div class="container-fluid">
-        @if(session('success'))
+        {{-- @if(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
@@ -20,7 +20,7 @@
                     @endforeach
                 </ul>
             </div>
-        @endif
+        @endif --}}
 
         @if(($questions ?? collect())->isEmpty())
             <div class="alert alert-warning">No teacher evaluation questions found.</div>

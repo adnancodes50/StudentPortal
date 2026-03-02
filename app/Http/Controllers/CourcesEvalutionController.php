@@ -135,6 +135,10 @@ class CourcesEvalutionController extends Controller
 
     public function submit(Request $request)
     {
+        if ($request->boolean('step_save')) {
+            return $this->saveStep($request);
+        }
+
         if ($request->filled('submissions_payload')) {
             return $this->submitBatch($request);
         }
@@ -168,53 +172,76 @@ class CourcesEvalutionController extends Controller
         }
 
         DB::transaction(function () use ($validated, $studentId) {
-            foreach ($validated['answers'] as $answer) {
-                $optionId = $answer['option_id'] ?? $answer['selected_option_id'] ?? null;
-
-                CourseEvaluationReport::create([
-                    'student_id' => $studentId,
-                    'teacher_id' => (int) $validated['teacher_id'],
-                    'session_id' => (int) $validated['session_id'],
-                    'classs_id' => (int) $validated['class_id'],
-                    'course_id' => (int) $validated['course_id'],
-                    'question_id' => (int) $answer['question_id'],
-                    'option_id' => $optionId !== null ? (int) $optionId : null,
-                ]);
-            }
-
-            $comment = $validated['comment'] ?? [];
-            $hasCommentData = collect($comment)->filter(fn ($value) => trim((string) $value) !== '')->isNotEmpty();
-
-            if ($hasCommentData) {
-                CourseEvaluationComment::create([
-                    'student_id' => $studentId,
-                    'teacher_id' => (int) $validated['teacher_id'],
-                    'session_id' => (int) $validated['session_id'],
-                    'class_id' => (int) $validated['class_id'],
-                    'course_id' => (int) $validated['course_id'],
-                    'course_best_features' => $comment['course_best_features'] ?? null,
-                    'course_improvement_sgtions' => $comment['course_improvement_sgtions'] ?? null,
-                    'course_content_organization' => $comment['course_content_organization'] ?? null,
-                    'student_contribution' => $comment['student_contribution'] ?? null,
-                    'learning_environment' => $comment['learning_environment'] ?? null,
-                    'learning_resources' => $comment['learning_resources'] ?? null,
-                    'delivery_quality' => $comment['delivery_quality'] ?? null,
-                    'assessment_ethodology' => $comment['assessment_ethodology'] ?? null,
-                ]);
-            }
+            $this->persistSubmission($validated, $studentId);
         });
 
         return back()->with('success', 'Course evaluation submitted successfully.');
     }
 
+    private function saveStep(Request $request)
+    {
+        $payload = json_decode((string) $request->input('step_payload'), true);
+
+        if (! is_array($payload)) {
+            return response()->json(['message' => 'Invalid step payload.'], 422);
+        }
+
+        $validated = validator($payload, [
+            'teacher_id' => ['required', 'integer', 'min:1'],
+            'session_id' => ['required', 'integer'],
+            'class_id' => ['required', 'integer'],
+            'course_id' => ['required', 'integer'],
+            'answers' => ['required', 'array', 'min:1'],
+            'answers.*.question_id' => ['required', 'integer'],
+            'answers.*.option_id' => ['required', 'integer'],
+            'comment' => ['nullable', 'array'],
+        ])->validate();
+
+        $studentId = $this->resolveLoggedInStudentId($validated);
+        if ($studentId <= 0) {
+            return response()->json(['message' => 'Unable to resolve logged-in student id.'], 422);
+        }
+
+        DB::transaction(function () use ($validated, $studentId) {
+            $this->persistSubmission($validated, $studentId);
+        });
+
+        return response()->json(['ok' => true]);
+    }
+
     private function submitBatch(Request $request)
     {
         $decoded = json_decode((string) $request->input('submissions_payload'), true);
+        $requiredQuestionCount = CourseEvaluationQuestion::query()->count();
 
         if (! is_array($decoded) || empty($decoded)) {
             return back()->withErrors([
                 'submissions_payload' => 'Invalid evaluation payload.',
             ])->withInput();
+        }
+
+        foreach ($decoded as $submission) {
+            if (
+                ! is_array($submission)
+                || ! isset($submission['answers'])
+                || ! is_array($submission['answers'])
+                || count($submission['answers']) < $requiredQuestionCount
+            ) {
+                return back()->withErrors([
+                    'submissions_payload' => 'Please fill all courses evaluation before submit.',
+                ])->withInput();
+            }
+
+            foreach ($submission['answers'] as $answer) {
+                $questionId = (int) ($answer['question_id'] ?? 0);
+                $optionId = (int) ($answer['option_id'] ?? 0);
+
+                if ($questionId <= 0 || $optionId <= 0) {
+                    return back()->withErrors([
+                        'submissions_payload' => 'Please fill all courses evaluation before submit.',
+                    ])->withInput();
+                }
+            }
         }
 
         DB::transaction(function () use ($decoded) {
@@ -238,51 +265,74 @@ class CourcesEvalutionController extends Controller
                     continue;
                 }
 
-                foreach ($submission['answers'] as $answer) {
-                    $questionId = (int) ($answer['question_id'] ?? 0);
-                    $optionId = (int) ($answer['option_id'] ?? 0);
-
-                    if ($questionId <= 0 || $optionId <= 0) {
-                        continue;
-                    }
-
-                    CourseEvaluationReport::create([
-                        'student_id' => $studentId,
-                        'teacher_id' => (int) $submission['teacher_id'],
-                        'session_id' => (int) $submission['session_id'],
-                        'classs_id' => (int) $submission['class_id'],
-                        'course_id' => (int) $submission['course_id'],
-                        'question_id' => $questionId,
-                        'option_id' => $optionId,
-                    ]);
-                }
-
-                $comment = $submission['comment'] ?? [];
-                if (is_array($comment)) {
-                    $hasCommentData = collect($comment)->filter(fn ($value) => trim((string) $value) !== '')->isNotEmpty();
-
-                    if ($hasCommentData) {
-                        CourseEvaluationComment::create([
-                            'student_id' => $studentId,
-                            'teacher_id' => (int) $submission['teacher_id'],
-                            'session_id' => (int) $submission['session_id'],
-                            'class_id' => (int) $submission['class_id'],
-                            'course_id' => (int) $submission['course_id'],
-                            'course_best_features' => $comment['course_best_features'] ?? null,
-                            'course_improvement_sgtions' => $comment['course_improvement_sgtions'] ?? null,
-                            'course_content_organization' => $comment['course_content_organization'] ?? null,
-                            'student_contribution' => $comment['student_contribution'] ?? null,
-                            'learning_environment' => $comment['learning_environment'] ?? null,
-                            'learning_resources' => $comment['learning_resources'] ?? null,
-                            'delivery_quality' => $comment['delivery_quality'] ?? null,
-                            'assessment_ethodology' => $comment['assessment_ethodology'] ?? null,
-                        ]);
-                    }
-                }
+                $this->persistSubmission($submission, $studentId);
             }
         });
 
         return back()->with('success', 'Course evaluations submitted successfully.');
+    }
+
+    private function persistSubmission(array $submission, int $studentId): void
+    {
+        $teacherId = (int) $submission['teacher_id'];
+        $sessionId = (int) $submission['session_id'];
+        $classId = (int) $submission['class_id'];
+        $courseId = (int) $submission['course_id'];
+
+        CourseEvaluationReport::query()
+            ->where('student_id', $studentId)
+            ->where('teacher_id', $teacherId)
+            ->where('session_id', $sessionId)
+            ->where('classs_id', $classId)
+            ->where('course_id', $courseId)
+            ->delete();
+
+        foreach ($submission['answers'] as $answer) {
+            $questionId = (int) ($answer['question_id'] ?? 0);
+            $optionId = (int) ($answer['option_id'] ?? ($answer['selected_option_id'] ?? 0));
+            if ($questionId <= 0 || $optionId <= 0) {
+                continue;
+            }
+
+            CourseEvaluationReport::create([
+                'student_id' => $studentId,
+                'teacher_id' => $teacherId,
+                'session_id' => $sessionId,
+                'classs_id' => $classId,
+                'course_id' => $courseId,
+                'question_id' => $questionId,
+                'option_id' => $optionId,
+            ]);
+        }
+
+        CourseEvaluationComment::query()
+            ->where('student_id', $studentId)
+            ->where('teacher_id', $teacherId)
+            ->where('session_id', $sessionId)
+            ->where('class_id', $classId)
+            ->where('course_id', $courseId)
+            ->delete();
+
+        $comment = is_array($submission['comment'] ?? null) ? $submission['comment'] : [];
+        $hasCommentData = collect($comment)->filter(fn ($value) => trim((string) $value) !== '')->isNotEmpty();
+
+        if ($hasCommentData) {
+            CourseEvaluationComment::create([
+                'student_id' => $studentId,
+                'teacher_id' => $teacherId,
+                'session_id' => $sessionId,
+                'class_id' => $classId,
+                'course_id' => $courseId,
+                'course_best_features' => $comment['course_best_features'] ?? null,
+                'course_improvement_sgtions' => $comment['course_improvement_sgtions'] ?? null,
+                'course_content_organization' => $comment['course_content_organization'] ?? null,
+                'student_contribution' => $comment['student_contribution'] ?? null,
+                'learning_environment' => $comment['learning_environment'] ?? null,
+                'learning_resources' => $comment['learning_resources'] ?? null,
+                'delivery_quality' => $comment['delivery_quality'] ?? null,
+                'assessment_ethodology' => $comment['assessment_ethodology'] ?? null,
+            ]);
+        }
     }
 
     private function resolveCandidateStudentIds()

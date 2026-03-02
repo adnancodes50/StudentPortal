@@ -8,11 +8,11 @@
 
 @section('content')
     <div class="container-fluid">
-        @if(session('success'))
+        {{-- @if(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
+        @endif --}}
 
-        @if($errors->any())
+        {{-- @if($errors->any())
             <div class="alert alert-danger">
                 <ul class="mb-0 pl-3">
                     @foreach($errors->all() as $error)
@@ -20,7 +20,7 @@
                     @endforeach
                 </ul>
             </div>
-        @endif
+        @endif --}}
 
         @if(($questions ?? collect())->isEmpty())
             <div class="alert alert-warning">No evaluation questions found.</div>
