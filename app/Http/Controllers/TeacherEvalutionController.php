@@ -30,7 +30,6 @@ class TeacherEvalutionController extends Controller
 
         $candidateStudentIds = $this->resolveCandidateStudentIds();
         $assignedCourses = $this->loadAssignedCourses($candidateStudentIds);
-
         if ($assignedCourses->isEmpty()) {
             $fallbackStudentIds = $this->resolveStudentIdsFromLoginName();
             if ($fallbackStudentIds->isNotEmpty()) {
@@ -38,7 +37,6 @@ class TeacherEvalutionController extends Controller
                 $assignedCourses = $this->loadAssignedCourses($candidateStudentIds);
             }
         }
-
         $teacherAssignments = collect();
         if ($assignedCourses->isNotEmpty()) {
             $teacherClassColumn = Schema::hasColumn('teachers_classes_courses', 'classs_id') ? 'classs_id' : 'class_id';
@@ -53,11 +51,9 @@ class TeacherEvalutionController extends Controller
                 'course_id',
                 'session_id',
             ];
-
             if ($teacherSectionColumn) {
                 $teacherSelect[] = DB::raw($teacherSectionColumn.' as teacher_section');
             }
-
             $teacherAssignments = TeacherClasses::query()
                 ->select($teacherSelect)
                 ->with('teacher:teacher_id,teacher_first_name,teacher_last_name')
@@ -76,6 +72,7 @@ class TeacherEvalutionController extends Controller
             ]);
         });
 
+
         $teacherByBaseKey = $teacherAssignments->keyBy(function ($item) {
             return implode('|', [
                 (int) $item->teacher_class_id,
@@ -92,7 +89,6 @@ class TeacherEvalutionController extends Controller
                     (int) $course->session_id,
                 ]);
                 $exactKey = $baseKey.'|'.Str::lower(trim((string) ($course->student_section ?? '')));
-
                 $teacherAssignment = $teacherByExactKey->get($exactKey) ?? $teacherByBaseKey->get($baseKey);
 
                 $sessionLabel = $course->session
@@ -141,7 +137,6 @@ class TeacherEvalutionController extends Controller
                 return ! $exists; // keep only not submitted
             })->values();
         }
-
         return view('admin.teacher-evalution.index', [
             'questions' => $questions,
             'evaluationTargets' => $evaluationTargets,
