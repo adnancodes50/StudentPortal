@@ -19,3 +19,14 @@ Route::get('/course-evaluation', [App\Http\Controllers\CourcesEvalutionControlle
 Route::post('/course-evaluation/submit', [App\Http\Controllers\CourcesEvalutionController::class, 'submit'])->name('student.course-evaluation.submit');
 Route::get('/teacher-evaluation', [App\Http\Controllers\TeacherEvalutionController::class, 'index'])->name('student.teacher-evaluation');
 Route::post('/teacher-evaluation/submit', [App\Http\Controllers\TeacherEvalutionController::class, 'submit'])->name('student.teacher-evaluation.submit');
+// Course Evaluation Routes
+Route::post('student/course-evaluation/check-submitted', [CourcesEvalutionController::class, 'checkSubmitted'])
+    ->name('student.course-evaluation.check-submitted');
+Route::post('student/course-evaluation/submit', [CourcesEvalutionController::class, 'submit'])
+    ->name('student.course-evaluation.submit');
+
+// Teacher Evaluation Routes
+Route::post('student/teacher-evaluation/check-submitted', [TeacherEvalutionController::class, 'checkSubmitted'])
+    ->name('student.teacher-evaluation.check-submitted');
+Route::post('student/teacher-evaluation/submit', [TeacherEvalutionController::class, 'submit'])
+    ->name('student.teacher-evaluation.submit');

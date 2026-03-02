@@ -8,30 +8,16 @@
 
 @section('content')
     <div class="container-fluid">
-        {{-- @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif --}}
-
-        {{-- @if($errors->any())
-            <div class="alert alert-danger">
-                <ul class="mb-0 pl-3">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif --}}
-
         @if(($questions ?? collect())->isEmpty())
-            <div class="alert alert-warning">No evaluation questions found.</div>
+            <div class="alert alert-danger">No evaluation questions found.</div>
         @elseif(($evaluationTargets ?? collect())->isEmpty())
-            <div class="alert alert-warning">
-                No assigned course/teacher mapping found for your account.
-            </div>
+            <div class="alert alert-danger">
+You have already submitted all course evaluations.            </div>
         @else
             <form id="courseEvaluationWizard" method="POST" action="{{ route('student.course-evaluation.submit') }}">
                 @csrf
                 <input type="hidden" name="submissions_payload" id="submissions_payload">
+                <input type="hidden" name="current_step" id="current_step" value="0">
 
                 <div class="card mb-3">
                     <div class="card-header wizard-top d-flex align-items-center">
@@ -76,13 +62,13 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6"><div class="form-group"><label>Course Best Features</label><textarea id="c_course_best_features" class="form-control" rows="2"></textarea></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Course Improvement Suggestions</label><textarea id="c_course_improvement_sgtions" class="form-control" rows="2"></textarea></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Course Improvement Suggestions</label><textarea id="c_course_improvement_suggestions" class="form-control" rows="2"></textarea></div></div>
                             <div class="col-md-6"><div class="form-group"><label>Course Content Organization</label><textarea id="c_course_content_organization" class="form-control" rows="2"></textarea></div></div>
                             <div class="col-md-6"><div class="form-group"><label>Student Contribution</label><textarea id="c_student_contribution" class="form-control" rows="2"></textarea></div></div>
                             <div class="col-md-6"><div class="form-group"><label>Learning Environment</label><textarea id="c_learning_environment" class="form-control" rows="2"></textarea></div></div>
                             <div class="col-md-6"><div class="form-group"><label>Learning Resources</label><textarea id="c_learning_resources" class="form-control" rows="2"></textarea></div></div>
                             <div class="col-md-6"><div class="form-group"><label>Delivery Quality</label><textarea id="c_delivery_quality" class="form-control" rows="2"></textarea></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Assessment Methodology</label><textarea id="c_assessment_ethodology" class="form-control" rows="2"></textarea></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Assessment Methodology</label><textarea id="c_assessment_methodology" class="form-control" rows="2"></textarea></div></div>
                         </div>
                     </div>
                     <div class="card-footer d-flex align-items-center">
@@ -122,6 +108,12 @@
 
         .option-grid { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 8px; }
         @media (max-width: 768px) { .option-grid { grid-template-columns: 1fr; } }
+
+        .btn-outline-secondary.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
     </style>
 @stop
 
@@ -133,7 +125,31 @@
             if (!targets.length) return;
 
             const questionIds = Array.from(document.querySelectorAll('.question-item')).map(el => Number(el.dataset.questionId));
-            const state = { current: 0, byStep: {} };
+
+            // Check which targets are already submitted
+            const checkSubmittedStatus = async () => {
+                try {
+                    const response = await fetch('{{ route("student.course-evaluation.check-submitted") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ targets: targets })
+                    });
+                    const data = await response.json();
+                    return data.submitted;
+                } catch (error) {
+                    console.error('Error checking submitted status:', error);
+                    return [];
+                }
+            };
+
+            const state = {
+                current: 0,
+                byStep: {},
+                submittedTargets: []
+            };
 
             const stepCounter = document.getElementById('stepCounter');
             const metaTeacher = document.getElementById('metaTeacher');
@@ -143,17 +159,44 @@
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
             const finalSubmitBtn = document.getElementById('finalSubmitBtn');
+            const currentStepInput = document.getElementById('current_step');
 
             const commentIds = [
                 'c_course_best_features',
-                'c_course_improvement_sgtions',
+                'c_course_improvement_suggestions',
                 'c_course_content_organization',
                 'c_student_contribution',
                 'c_learning_environment',
                 'c_learning_resources',
                 'c_delivery_quality',
-                'c_assessment_ethodology',
+                'c_assessment_methodology',
             ];
+
+            // Load saved data from localStorage
+            function loadSavedData() {
+                const saved = localStorage.getItem('courseEvaluationState');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.byStep) {
+                            state.byStep = parsed.byStep;
+                        }
+                        if (parsed.current !== undefined && parsed.current < targets.length) {
+                            state.current = parsed.current;
+                        }
+                    } catch (e) {
+                        console.error('Error loading saved data:', e);
+                    }
+                }
+            }
+
+            // Save data to localStorage
+            function saveToLocalStorage() {
+                localStorage.setItem('courseEvaluationState', JSON.stringify({
+                    byStep: state.byStep,
+                    current: state.current
+                }));
+            }
 
             function readStepData() {
                 const answers = {};
@@ -164,13 +207,13 @@
 
                 const comment = {
                     course_best_features: document.getElementById('c_course_best_features').value,
-                    course_improvement_sgtions: document.getElementById('c_course_improvement_sgtions').value,
+                    course_improvement_suggestions: document.getElementById('c_course_improvement_suggestions').value,
                     course_content_organization: document.getElementById('c_course_content_organization').value,
                     student_contribution: document.getElementById('c_student_contribution').value,
                     learning_environment: document.getElementById('c_learning_environment').value,
                     learning_resources: document.getElementById('c_learning_resources').value,
                     delivery_quality: document.getElementById('c_delivery_quality').value,
-                    assessment_ethodology: document.getElementById('c_assessment_ethodology').value,
+                    assessment_methodology: document.getElementById('c_assessment_methodology').value,
                 };
 
                 return { answers, comment };
@@ -180,7 +223,11 @@
                 const data = readStepData();
                 const missing = questionIds.some(qid => !data.answers[qid]);
                 if (missing) {
-                    Swal.fire({ icon: 'warning', title: 'Incomplete', text: 'Please answer all questions before continuing.' });
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete',
+                        text: 'Please answer all questions before continuing.'
+                    });
                     return false;
                 }
                 return true;
@@ -188,6 +235,7 @@
 
             function saveCurrentStep() {
                 state.byStep[state.current] = readStepData();
+                saveToLocalStorage();
             }
 
             function loadCurrentStep() {
@@ -196,18 +244,55 @@
 
                 stepCounter.textContent = `Step ${state.current + 1} of ${targets.length}`;
 
-                const parts = (target.label || '').split('|').map(p => p.trim());
-                metaCourse.textContent = target.course_name || parts[0] || '-';
-                metaClass.textContent = target.class_name || parts[1] || '-';
-                metaSession.textContent = target.session_name || parts[2] || '-';
-                metaTeacher.textContent = target.teacher_name || parts[3] || '-';
+                metaCourse.textContent = target.course_name || '-';
+                metaClass.textContent = target.class_name || '-';
+                metaSession.textContent = target.session_name || '-';
+                metaTeacher.textContent = target.teacher_name || '-';
 
+                // Check if this target is already submitted
+                const isSubmitted = state.submittedTargets.some(t =>
+                    t.course_id === target.course_id &&
+                    t.class_id === target.class_id &&
+                    t.session_id === target.session_id
+                );
+
+                if (isSubmitted) {
+                    // Disable all inputs
+                    document.querySelectorAll('input[type="radio"], textarea').forEach(el => {
+                        el.disabled = true;
+                    });
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Already Submitted',
+                        text: 'You have already submitted evaluation for this course.',
+                        timer: 3000
+                    });
+                } else {
+                    // Enable all inputs
+                    document.querySelectorAll('input[type="radio"], textarea').forEach(el => {
+                        el.disabled = false;
+                    });
+                }
+
+                // Load answers
                 for (const qid of questionIds) {
                     const val = saved.answers[qid];
                     const radios = document.querySelectorAll(`input[name="q_${qid}"]`);
-                    radios.forEach(r => { r.checked = Number(r.value) === Number(val); });
+                    radios.forEach(r => {
+                        r.checked = Number(r.value) === Number(val);
+                        // Update button style
+                        const label = r.closest('label');
+                        if (label) {
+                            if (r.checked) {
+                                label.classList.add('active');
+                            } else {
+                                label.classList.remove('active');
+                            }
+                        }
+                    });
                 }
 
+                // Load comments
                 commentIds.forEach(id => {
                     const key = id.replace('c_', '');
                     document.getElementById(id).value = saved.comment[key] || '';
@@ -217,7 +302,25 @@
                 const isLast = state.current === targets.length - 1;
                 nextBtn.classList.toggle('d-none', isLast);
                 finalSubmitBtn.classList.toggle('d-none', !isLast);
+                currentStepInput.value = state.current;
             }
+
+            // Style radio buttons on click
+            document.querySelectorAll('.option-grid input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const name = this.name;
+                    document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                        const label = r.closest('label');
+                        if (label) {
+                            if (r.checked) {
+                                label.classList.add('active');
+                            } else {
+                                label.classList.remove('active');
+                            }
+                        }
+                    });
+                });
+            });
 
             prevBtn.addEventListener('click', () => {
                 saveCurrentStep();
@@ -227,19 +330,21 @@
                 }
             });
 
-            nextBtn.addEventListener('click', () => {
+            nextBtn.addEventListener('click', async () => {
                 if (!validateCurrentStep()) return;
                 saveCurrentStep();
+
                 if (state.current < targets.length - 1) {
                     state.current++;
                     loadCurrentStep();
                 }
             });
 
-            finalSubmitBtn.addEventListener('click', () => {
+            finalSubmitBtn.addEventListener('click', async () => {
                 if (!validateCurrentStep()) return;
                 saveCurrentStep();
 
+                // Check for missing steps
                 let firstMissingStep = -1;
                 for (let idx = 0; idx < targets.length; idx++) {
                     const step = state.byStep[idx];
@@ -258,12 +363,24 @@
                     Swal.fire({
                         icon: 'warning',
                         title: 'Incomplete',
-                        text: 'Please fill all courses evaluation before submit.'
+                        text: 'Please fill all course evaluations before submit.'
                     });
                     state.current = firstMissingStep;
                     loadCurrentStep();
                     return;
                 }
+
+                // Confirm submission
+                const result = await Swal.fire({
+                    icon: 'question',
+                    title: 'Confirm Submission',
+                    text: 'Are you sure you want to submit all evaluations?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, submit',
+                    cancelButtonText: 'Cancel'
+                });
+
+                if (!result.isConfirmed) return;
 
                 const submissions = targets.map((target, idx) => {
                     const step = state.byStep[idx];
@@ -281,14 +398,31 @@
                 });
 
                 document.getElementById('submissions_payload').value = JSON.stringify(submissions);
+
+                // Clear localStorage after successful submission
+                localStorage.removeItem('courseEvaluationState');
+
                 document.getElementById('courseEvaluationWizard').submit();
             });
 
-            loadCurrentStep();
+            // Initialize
+            (async () => {
+                loadSavedData();
+                state.submittedTargets = await checkSubmittedStatus();
+                loadCurrentStep();
+            })();
         })();
 
         @if(session('success'))
-            Swal.fire({ icon: 'success', title: 'Submitted', text: @json(session('success')), confirmButtonText: 'OK' });
+            Swal.fire({
+                icon: 'success',
+                title: 'Submitted',
+                text: @json(session('success')),
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Clear localStorage on successful submission
+                localStorage.removeItem('courseEvaluationState');
+            });
         @endif
     </script>
 @stop

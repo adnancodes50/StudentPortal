@@ -49,13 +49,13 @@ class TeacherEvalutionController extends Controller
             $teacherSelect = [
                 'teacher_course_id',
                 'teacher_id',
-                DB::raw($teacherClassColumn . ' as teacher_class_id'),
+                DB::raw($teacherClassColumn.' as teacher_class_id'),
                 'course_id',
                 'session_id',
             ];
 
             if ($teacherSectionColumn) {
-                $teacherSelect[] = DB::raw($teacherSectionColumn . ' as teacher_section');
+                $teacherSelect[] = DB::raw($teacherSectionColumn.' as teacher_section');
             }
 
             $teacherAssignments = TeacherClasses::query()
@@ -91,13 +91,13 @@ class TeacherEvalutionController extends Controller
                     (int) $course->course_id,
                     (int) $course->session_id,
                 ]);
-                $exactKey = $baseKey . '|' . Str::lower(trim((string) ($course->student_section ?? '')));
+                $exactKey = $baseKey.'|'.Str::lower(trim((string) ($course->student_section ?? '')));
 
                 $teacherAssignment = $teacherByExactKey->get($exactKey) ?? $teacherByBaseKey->get($baseKey);
 
                 $sessionLabel = $course->session
-                    ? trim(($course->session->session_type ?? '') . ' ' . ($course->session->session_year ?? '') . ' ' . ($course->session->session_timing ?? ''))
-                    : ('Session #' . $course->session_id);
+                    ? trim(($course->session->session_type ?? '').' '.($course->session->session_year ?? '').' '.($course->session->session_timing ?? ''))
+                    : ('Session #'.$course->session_id);
 
                 $teacherName = $teacherAssignment?->teacher?->teacher_name ?? 'Teacher Not Found';
                 $teacherId = (int) ($teacherAssignment?->teacher_id ?? 0);
@@ -105,27 +105,79 @@ class TeacherEvalutionController extends Controller
                 return [
                     'assignment_id' => (int) $course->students_classe_course_id,
                     'teacher_id' => $teacherId,
+                    'teacher_name' => $teacherName,
                     'session_id' => (int) $course->session_id,
+                    'session_name' => $sessionLabel,
                     'class_id' => (int) $course->class_id,
+                    'class_name' => $course->class->class_name ?? ('Class #'.$course->class_id),
                     'course_id' => (int) $course->course_id,
+                    'course_name' => $course->course->course_title ?? ('Course #'.$course->course_id),
                     'label' => trim(
-                        ($course->course->course_title ?? ('Course #' . $course->course_id))
-                        . ' | '
-                        . ($course->class->class_name ?? ('Class #' . $course->class_id))
-                        . ' | '
-                        . $sessionLabel
-                        . ' | '
-                        . $teacherName
+                        ($course->course->course_title ?? ('Course #'.$course->course_id))
+                        .' | '
+                        .($course->class->class_name ?? ('Class #'.$course->class_id))
+                        .' | '
+                        .$sessionLabel
+                        .' | '
+                        .$teacherName
                     ),
                 ];
             })
             ->filter(fn ($target) => $target['teacher_id'] > 0)
             ->values();
+        $studentId = $this->resolveLoggedInStudentId();
+
+        if ($studentId > 0) {
+            $evaluationTargets = $evaluationTargets->filter(function ($target) use ($studentId) {
+
+                $exists = TeacherEvaluationReport::query()
+                    ->where('student_id', $studentId)
+                    ->where('teacher_id', $target['teacher_id'])
+                    ->where('session_id', $target['session_id'])
+                    ->where('classs_id', $target['class_id'])
+                    ->where('course_id', $target['course_id'])
+                    ->exists();
+
+                return ! $exists; // keep only not submitted
+            })->values();
+        }
 
         return view('admin.teacher-evalution.index', [
             'questions' => $questions,
             'evaluationTargets' => $evaluationTargets,
         ]);
+    }
+
+    public function checkSubmitted(Request $request)
+    {
+        $targets = $request->input('targets', []);
+        $studentId = $this->resolveLoggedInStudentId();
+
+        if ($studentId <= 0 || empty($targets)) {
+            return response()->json(['submitted' => []]);
+        }
+
+        $submitted = [];
+        foreach ($targets as $target) {
+            $exists = TeacherEvaluationReport::query()
+                ->where('student_id', $studentId)
+                ->where('teacher_id', (int) ($target['teacher_id'] ?? 0))
+                ->where('session_id', (int) ($target['session_id'] ?? 0))
+                ->where('classs_id', (int) ($target['class_id'] ?? 0))
+                ->where('course_id', (int) ($target['course_id'] ?? 0))
+                ->exists();
+
+            if ($exists) {
+                $submitted[] = [
+                    'teacher_id' => (int) ($target['teacher_id'] ?? 0),
+                    'session_id' => (int) ($target['session_id'] ?? 0),
+                    'class_id' => (int) ($target['class_id'] ?? 0),
+                    'course_id' => (int) ($target['course_id'] ?? 0),
+                ];
+            }
+        }
+
+        return response()->json(['submitted' => $submitted]);
     }
 
     public function submit(Request $request)
@@ -144,7 +196,7 @@ class TeacherEvalutionController extends Controller
             'answers.*.option_id' => ['required', 'integer'],
             'answers.*.selected_option_id' => ['nullable', 'integer'],
             'comment.evaluation_comment_course' => ['nullable', 'string'],
-            'comment.evaluation_comment_instructer' => ['nullable', 'string'],
+            'comment.evaluation_comment_instructor' => ['nullable', 'string'],
         ]);
 
         $studentId = $this->resolveLoggedInStudentId($validated);
@@ -152,6 +204,21 @@ class TeacherEvalutionController extends Controller
         if ($studentId <= 0) {
             return back()->withErrors([
                 'student_id' => 'Unable to resolve logged-in student id.',
+            ])->withInput();
+        }
+
+        // Check if already submitted
+        $exists = TeacherEvaluationReport::query()
+            ->where('student_id', $studentId)
+            ->where('teacher_id', (int) $validated['teacher_id'])
+            ->where('session_id', (int) $validated['session_id'])
+            ->where('classs_id', (int) $validated['class_id'])
+            ->where('course_id', (int) $validated['course_id'])
+            ->exists();
+
+        if ($exists) {
+            return back()->withErrors([
+                'duplicate' => 'You have already submitted evaluation for this teacher.',
             ])->withInput();
         }
 
@@ -181,12 +248,12 @@ class TeacherEvalutionController extends Controller
                     'class_id' => (int) $validated['class_id'],
                     'course_id' => (int) $validated['course_id'],
                     'evaluation_comment_course' => $comment['evaluation_comment_course'] ?? null,
-                    'evaluation_comment_instructer' => $comment['evaluation_comment_instructer'] ?? null,
+                    'evaluation_comment_instructor' => $comment['evaluation_comment_instructor'] ?? null,
                 ]);
             }
         });
 
-        return back()->with('success', 'Teacher evaluation submitted successfully.');
+        return redirect()->back()->with('success', 'Teacher evaluation submitted successfully.');
     }
 
     private function submitBatch(Request $request)
@@ -245,6 +312,19 @@ class TeacherEvalutionController extends Controller
                     continue;
                 }
 
+                // Check if already submitted
+                $exists = TeacherEvaluationReport::query()
+                    ->where('student_id', $studentId)
+                    ->where('teacher_id', (int) $submission['teacher_id'])
+                    ->where('session_id', (int) $submission['session_id'])
+                    ->where('classs_id', (int) $submission['class_id'])
+                    ->where('course_id', (int) $submission['course_id'])
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
                 foreach ($submission['answers'] as $answer) {
                     $questionId = (int) ($answer['question_id'] ?? 0);
                     $optionId = (int) ($answer['option_id'] ?? 0);
@@ -276,14 +356,14 @@ class TeacherEvalutionController extends Controller
                             'class_id' => (int) $submission['class_id'],
                             'course_id' => (int) $submission['course_id'],
                             'evaluation_comment_course' => $comment['evaluation_comment_course'] ?? null,
-                            'evaluation_comment_instructer' => $comment['evaluation_comment_instructer'] ?? null,
+                            'evaluation_comment_instructor' => $comment['evaluation_comment_instructor'] ?? null,
                         ]);
                     }
                 }
             }
         });
 
-        return back()->with('success', 'Teacher evaluations submitted successfully.');
+        return redirect()->back()->with('success', 'Teacher evaluations submitted successfully.');
     }
 
     private function resolveCandidateStudentIds()
@@ -330,9 +410,9 @@ class TeacherEvalutionController extends Controller
         if (! empty($validated)) {
             $matchedStudentId = (int) (StudentClassesCoursesModel::query()
                 ->whereIn('student_id', $candidateIds->all())
-                ->where('class_id', (int) $validated['class_id'])
-                ->where('course_id', (int) $validated['course_id'])
-                ->where('session_id', (int) $validated['session_id'])
+                ->where('class_id', (int) ($validated['class_id'] ?? 0))
+                ->where('course_id', (int) ($validated['course_id'] ?? 0))
+                ->where('session_id', (int) ($validated['session_id'] ?? 0))
                 ->value('student_id') ?? 0);
 
             if ($matchedStudentId > 0) {

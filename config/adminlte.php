@@ -345,7 +345,6 @@ return [
             'icon' => 'fas fa-fw fa-chalkboard-teacher',
         ],
 
-
     ],
 
     /*
