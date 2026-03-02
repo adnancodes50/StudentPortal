@@ -130,7 +130,7 @@ class CourcesEvalutionController extends Controller
                 $target['course_id'],
             ]))
             ->values();
-
+// dd($studentId );
         return view('admin.cources-evalution.index', [
             'questions' => $questions,
             'evaluationTargets' => $evaluationTargets,
@@ -158,7 +158,8 @@ class CourcesEvalutionController extends Controller
             'comment.assessment_ethodology' => ['nullable', 'string'],
         ]);
 
-        $studentId = (int) ($this->resolveCandidateStudentIds()->first() ?? 0);
+        $studentId = $this->resolveLoggedInStudentId($validated);
+
 
         if ($studentId <= 0) {
             return back()->withErrors([
@@ -213,7 +214,6 @@ class CourcesEvalutionController extends Controller
         $candidateStudentIds = collect([
             $user?->student_id ?? null,
             $user?->student_login_id ?? null,
-            Auth::id(),
         ])
             ->filter(fn ($id) => ! empty($id))
             ->map(fn ($id) => (int) $id)
@@ -238,6 +238,45 @@ class CourcesEvalutionController extends Controller
         }
 
         return $candidateStudentIds->unique()->values();
+    }
+
+    private function resolveLoggedInStudentId(array $validated = []): int
+    {
+        $candidateIds = $this->resolveCandidateStudentIds();
+
+        if ($candidateIds->isEmpty()) {
+            return 0;
+        }
+
+        if (! empty($validated)) {
+            $matchedStudentId = (int) (StudentClassesCoursesModel::query()
+                ->whereIn('student_id', $candidateIds->all())
+                ->where('class_id', (int) $validated['class_id'])
+                ->where('course_id', (int) $validated['course_id'])
+                ->where('session_id', (int) $validated['session_id'])
+                ->value('student_id') ?? 0);
+
+            if ($matchedStudentId > 0) {
+                return $matchedStudentId;
+            }
+        }
+
+        if ($candidateIds->count() === 1) {
+            return (int) $candidateIds->first();
+        }
+
+        $bestStudentId = (int) (StudentClassesCoursesModel::query()
+            ->select('student_id', DB::raw('COUNT(*) as courses_count'))
+            ->whereIn('student_id', $candidateIds->all())
+            ->groupBy('student_id')
+            ->orderByDesc('courses_count')
+            ->value('student_id') ?? 0);
+
+        if ($bestStudentId > 0) {
+            return $bestStudentId;
+        }
+
+        return $bestStudentId > 0 ? $bestStudentId : 0;
     }
 
     private function resolveStudentIdsFromLoginName()
