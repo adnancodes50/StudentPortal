@@ -3,7 +3,10 @@
 @section('title', 'Courses Evaluation')
 
 @section('content_header')
-    <h1 class="m-0">Course Evaluation</h1>
+    <div class="eval-header">
+        <h1 class="m-0">Course Evaluation</h1>
+        <p class="mb-0">Please select one option for each question.</p>
+    </div>
 @stop
 
 @section('content')
@@ -29,52 +32,15 @@
                 No evaluation questions found.
             </div>
         @else
-            {{-- @if(($evaluationTargets ?? collect())->isNotEmpty())
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h3 class="card-title">Assigned Teachers and Classes</h3>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm mb-0">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Teacher</th>
-                                        <th>Class</th>
-                                        <th>Course</th>
-                                        <th>Session</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($evaluationTargets as $idx => $target)
-                                        <tr>
-                                            <td>{{ $idx + 1 }}</td>
-                                            <td>{{ $target['teacher_name'] ?? 'Teacher Not Found' }}</td>
-                                            <td>{{ $target['class_name'] ?? ('Class #' . ($target['class_id'] ?? '')) }}</td>
-                                            <td>{{ $target['course_name'] ?? ('Course #' . ($target['course_id'] ?? '')) }}</td>
-                                            <td>{{ $target['session_name'] ?? ('Session #' . ($target['session_id'] ?? '')) }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            @endif --}}
-
             <form method="POST" action="{{ route('student.course-evaluation.submit') }}">
                 @csrf
 
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h3 class="card-title">Select Course and Teacher</h3>
-                    </div>
+                <div class="card eval-card mb-4">
                     <div class="card-body">
                         @if(($evaluationTargets ?? collect())->isNotEmpty())
                             <div class="form-group mb-0">
-                                <label for="evaluation_target">Course / Class / Session / Teacher</label>
-                                <select class="form-control" id="evaluation_target" required>
+                                <label class="eval-label" for="evaluation_target">Course / Class / Session / Teacher</label>
+                                <select class="form-control eval-select" id="evaluation_target" required>
                                     <option value="">Select an assigned course</option>
                                     @foreach($evaluationTargets as $target)
                                         <option
@@ -90,16 +56,11 @@
                                     @endforeach
                                 </select>
                             </div>
+
                         @else
-                            <div class="alert alert-warning mb-3">
+                            <div class="alert alert-warning mb-0">
                                 No assigned course/teacher mapping found for your account.
                                 Please contact admin to assign teacher/class/session/course.
-                            </div>
-                            <div class="form-group mb-0">
-                                <label for="evaluation_target_empty">Course / Class / Session / Teacher</label>
-                                <select class="form-control" id="evaluation_target_empty" disabled>
-                                    <option>No assigned mapping available</option>
-                                </select>
                             </div>
                         @endif
 
@@ -110,50 +71,50 @@
                     </div>
                 </div>
 
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h3 class="card-title">Questions</h3>
-                    </div>
+                <div class="card eval-card mb-4">
+                   
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th style="min-width: 320px;">Question</th>
-                                        <th class="text-center">Strongly Disagree</th>
-                                        <th class="text-center">Disagree</th>
-                                        <th class="text-center">Neutral</th>
-                                        <th class="text-center">Agree</th>
-                                        <th class="text-center">Strongly Agree</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($questions as $index => $question)
-                                        <tr>
-                                            <td>
-                                                <input type="hidden" name="answers[{{ $index }}][question_id]" value="{{ $question->evaluation_question_id }}">
-                                                {{ $question->evaluation_question_title }}?
-                                            </td>
-                                            @for($option = 1; $option <= 5; $option++)
-                                                <td class="text-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="answers[{{ $index }}][option_id]"
-                                                        value="{{ $option }}"
-                                                        required
-                                                        {{ (string) old("answers.$index.option_id") === (string) $option ? 'checked' : '' }}
-                                                    >
-                                                </td>
-                                            @endfor
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                        @foreach($questions as $index => $question)
+                            <div class="question-item">
+                                <div class="question-title">
+                                    <span class="question-no">{{ $index + 1 }}</span>
+                                    <span>{{ rtrim($question->evaluation_question_title, '?') }}?</span>
+                                </div>
+
+                                <input type="hidden" name="answers[{{ $index }}][question_id]" value="{{ $question->evaluation_question_id }}">
+
+                                <div class="option-grid">
+                                    @for($option = 1; $option <= 5; $option++)
+                                        <label class="option-pill">
+                                            <input
+                                                type="radio"
+                                                name="answers[{{ $index }}][option_id]"
+                                                value="{{ $option }}"
+                                                required
+                                                {{ (string) old("answers.$index.option_id") === (string) $option ? 'checked' : '' }}
+                                            >
+                                            <span>
+                                                @if($option === 1)
+                                                    Strongly Disagree
+                                                @elseif($option === 2)
+                                                    Disagree
+                                                @elseif($option === 3)
+                                                    Neutral
+                                                @elseif($option === 4)
+                                                    Agree
+                                                @else
+                                                    Strongly Agree
+                                                @endif
+                                            </span>
+                                        </label>
+                                    @endfor
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
 
-                <div class="card mb-3">
+                <div class="card eval-card mb-4">
                     <div class="card-header">
                         <h3 class="card-title">Additional Comments (Optional)</h3>
                     </div>
@@ -210,7 +171,7 @@
                         </div>
                     </div>
                     <div class="card-footer text-right">
-                        <button type="submit" class="btn btn-primary" {{ ($evaluationTargets ?? collect())->isEmpty() ? 'disabled' : '' }}>
+                        <button type="submit" class="btn btn-primary px-4" {{ ($evaluationTargets ?? collect())->isEmpty() ? 'disabled' : '' }}>
                             Submit Evaluation
                         </button>
                     </div>
@@ -220,7 +181,124 @@
     </div>
 @stop
 
+@section('css')
+    <style>
+        .eval-header {
+            padding: 8px 0;
+            color: #1f2933;
+            background: transparent;
+            border: 0;
+        }
+
+        .eval-header p {
+            color: #5f6c7b;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .eval-card {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .eval-label {
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .eval-select {
+            border: 1px solid #ced4da;
+            background-color: #fff;
+        }
+
+        .eval-legend {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(120px, 1fr));
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #495057;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .question-item {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 14px;
+            margin-bottom: 12px;
+            background: #fff;
+        }
+
+        .question-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .question-title {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            color: #212529;
+            font-weight: 600;
+        }
+
+        .question-no {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #6c757d;
+            color: #fff;
+            font-size: 0.75rem;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(140px, 1fr));
+            gap: 8px;
+        }
+
+        .option-pill input {
+            display: none;
+        }
+
+        .option-pill span {
+            display: block;
+            text-align: center;
+            padding: 8px 6px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            background: #fff;
+            color: #343a40;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.82rem;
+            transition: all 0.1s ease-in-out;
+        }
+
+        .option-pill input:checked + span {
+            background: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .eval-legend {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .option-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+@stop
+
 @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         (function () {
             const targetSelect = document.getElementById('evaluation_target');
@@ -235,7 +313,6 @@
                 }
 
                 const selected = targetSelect.options[targetSelect.selectedIndex];
-
                 teacherIdField.value = selected ? (selected.dataset.teacher || '') : '';
                 sessionIdField.value = selected ? (selected.dataset.session || '') : '';
                 classIdField.value = selected ? (selected.dataset.class || '') : '';
@@ -247,5 +324,14 @@
                 syncFromSelect();
             }
         })();
+
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Submitted',
+                text: @json(session('success')),
+                confirmButtonText: 'OK'
+            });
+        @endif
     </script>
 @stop

@@ -336,13 +336,13 @@ return [
         [
             'text' => 'Cources Evaluation',
             'url' => '/course-evaluation',
-            'icon' => 'fas fa-fw fa-chart-line',
+            'icon' => 'fas fa-fw fa-book-open',
         ],
 
         [
             'text' => 'Teacher Evaluation',
             'url' => '/teacher-evaluation',
-            'icon' => 'fas fa-fw fa-chart-line',
+            'icon' => 'fas fa-fw fa-chalkboard-teacher',
         ],
 
 
