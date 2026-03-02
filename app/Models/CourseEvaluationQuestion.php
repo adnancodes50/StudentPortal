@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CourseEvaluationQuestion extends Model
 {
@@ -22,4 +23,9 @@ class CourseEvaluationQuestion extends Model
     protected $fillable = [
         'evaluation_question_title',
     ];
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(CourseEvaluationReport::class, 'question_id', 'evaluation_question_id');
+    }
 }

@@ -24,10 +24,12 @@ class CourseEvaluationReport extends Model
         'student_id',
         'teacher_id',
         'session_id',
+        'classs_id',
         'class_id',
         'course_id',
         'question_id',
         'selected_option_id',
+        'option_id',
     ];
 
     public function student(): BelongsTo
@@ -47,11 +49,40 @@ class CourseEvaluationReport extends Model
 
     public function classroom(): BelongsTo
     {
-        return $this->belongsTo(ClassModel::class, 'class_id', 'class_id');
+        return $this->belongsTo(ClassModel::class, 'classs_id', 'class_id');
     }
 
     public function course(): BelongsTo
     {
         return $this->belongsTo(CoursesModel::class, 'course_id', 'course_id');
-    } 
+    }
+
+    public function question(): BelongsTo
+    {
+        return $this->belongsTo(CourseEvaluationQuestion::class, 'question_id', 'evaluation_question_id');
+    }
+
+    public function getOptionIdAttribute(): ?int
+    {
+        return $this->selected_option_id !== null
+            ? (int) $this->selected_option_id
+            : null;
+    }
+
+    public function setOptionIdAttribute($value): void
+    {
+        $this->attributes['selected_option_id'] = $value;
+    }
+
+    public function getClassIdAttribute(): ?int
+    {
+        return $this->classs_id !== null
+            ? (int) $this->classs_id
+            : null;
+    }
+
+    public function setClassIdAttribute($value): void
+    {
+        $this->attributes['classs_id'] = $value;
+    }
 }
