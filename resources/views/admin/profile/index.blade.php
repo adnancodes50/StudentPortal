@@ -60,7 +60,7 @@
             <div class="card card-primary card-outline">
                 <div class="card-body box-profile">
                     <div class="text-center mb-3">
-                        <img class="profile-user-img img-fluid img-circle" src="{{ asset('images/placeholder.png') }}"
+                        <img class="profile-user-img img-fluid img-circle" src="{{ asset('images/placeholder2.png') }}"
                             alt="Student profile image">
                     </div>
 
@@ -81,11 +81,23 @@
                                 class="float-right">{{ $student->primary_email ?? (auth()->user()->email ?? 'N/A') }}</span>
                         </li>
                         <li class="list-group-item">
-    <b>Date of Birth</b>
-    <span class="float-right">
-        {{ $student->student_date_of_birth?->format('Y-m-d') ?? 'N/A' }}
-    </span>
-</li>
+                            <b>Student Religion</b> <span
+                                class="float-right">{{ $student->student_religion ?? 'N/A' }}</span>
+                        </li>
+                        {{-- <li class="list-group-item">
+                            <b>Degree Name</b> <span
+                                class="float-right">{{ $student->class->class_name ?? 'Class #' . $student->class_id }}</span>
+                        </li> --}}
+                        <li class="list-group-item">
+                            <b>Section</b> <span
+                                class="float-right">{{ $student->student_section ?? 'N/A' }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <b>Date of Birth</b>
+                            <span class="float-right">
+                                {{ $student->student_date_of_birth?->format('Y-m-d') ?? 'N/A' }}
+                            </span>
+                        </li>
                         <li class="list-group-item">
                             <b>Semester</b> <span class="float-right">{{ $currentSemester ?? 'N/A' }}</span>
                         </li>
@@ -119,9 +131,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="new_email">New Email (Optional)</label>
+                            <label for="new_email">New Email</label>
                             <input type="email" class="form-control" id="new_email" name="new_email"
-                                value="{{ old('new_email', $student->primary_email ?? '') }}" placeholder="Enter new email">
+                                value="{{ old('new_email', $student->primary_email ?? '') }}"
+                                placeholder="Enter new email">
                         </div>
 
                         <div class="form-group">

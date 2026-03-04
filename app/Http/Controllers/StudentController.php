@@ -280,7 +280,7 @@ class StudentController extends Controller
 {
     $data = $this->resolveStudentDashboardData();
 
-   
+    // dd($data['student']);
 
     return view('admin.profile.index', $data);
 }
@@ -611,6 +611,7 @@ class StudentController extends Controller
                     'student_last_name',
                     'arid_reg_no',
                     'student_date_of_birth',
+                    'student_religion',
                     'student_cnic',
                     'student_gender',
                     'student_section',

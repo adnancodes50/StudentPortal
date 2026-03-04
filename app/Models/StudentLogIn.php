@@ -63,7 +63,10 @@ class StudentLogIn extends Authenticatable
     return asset('images/placeholder2.png');
 }
 
-
+public function adminlte_desc()
+{
+    return 'Student';
+}
 
 
 }

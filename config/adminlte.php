@@ -137,7 +137,7 @@ return [
 'usermenu_header' => true,
 'usermenu_header_class' => 'bg-white',
 'usermenu_image' => 'images/placeholder2.png',
-'usermenu_desc' => false,
+'usermenu_desc' => true,
 'usermenu_profile_url' => true,
 
     /*
