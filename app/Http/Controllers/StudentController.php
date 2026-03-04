@@ -276,10 +276,14 @@ class StudentController extends Controller
         ]));
     }
 
-    public function profile()
-    {
-        return view('admin.profile.index', $this->resolveStudentDashboardData());
-    }
+   public function profile()
+{
+    $data = $this->resolveStudentDashboardData();
+
+   
+
+    return view('admin.profile.index', $data);
+}
 
     public function resetCredentials(Request $request)
     {
@@ -606,6 +610,7 @@ class StudentController extends Controller
                     'student_first_name',
                     'student_last_name',
                     'arid_reg_no',
+                    'student_date_of_birth',
                     'student_cnic',
                     'student_gender',
                     'student_section',

@@ -70,12 +70,13 @@
 
         .content-wrapper {
             background-image:
-                linear-gradient(rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.90)),
+                linear-gradient(rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.60)),
                 url('{{ asset('images/logo/logo.png') }}');
             background-size: contain;
             background-position: center center;
             background-repeat: no-repeat;
             background-attachment: scroll;
+
         }
 
         .dashboard-subtitle {

@@ -20,6 +20,7 @@
                                 <thead class="thead-light">
                                     <tr>
                                         <th>#</th>
+                                        {{-- <th>Image</th> --}}
                                         <th>Course Code</th>
                                         <th>Course Title</th>
                                         <th class="d-none d-md-table-cell">Credit Hours</th>
@@ -35,14 +36,25 @@
                                     @forelse($assignedCourses as $index => $course)
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
+                                            {{-- <td>
+<img src="{{ $course->course->course_image
+        ? 'http://localhost/university-admin/'.$course->course->course_image
+        : asset('images/default-course-image.jpg') }}"
+     alt="Course Image"
+     class="img-thumbnail"
+     style="max-width: 50px; max-height: 50px;">                                            </td> --}}
                                             <td>{{ $course->course->course_code ?? 'Course #' . $course->course_id }}</td>
                                             <td>{{ $course->course->course_title ?? '-' }}</td>
-                                            <td class="d-none d-md-table-cell">[ {{ $course->course->course_credit_hours ?? '-' }} ]</td>
-                                            <td class="d-none d-lg-table-cell">{{ $course->resolved_teacher_name ?? 'Not Found' }}</td>
-                                            <td class="d-none d-lg-table-cell">{{ $course->resolved_teacher_email ?? 'Not Found' }}</td>
-                                            <td class="d-none d-md-table-cell">{{ $course->class->class_name ?? ('Class #' . $course->class_id) }}</td>
+                                            <td class="d-none d-md-table-cell">[
+                                                {{ $course->course->course_credit_hours ?? '-' }} ]</td>
+                                            <td class="d-none d-lg-table-cell">
+                                                {{ $course->resolved_teacher_name ?? 'Not Found' }}</td>
+                                            <td class="d-none d-lg-table-cell">
+                                                {{ $course->resolved_teacher_email ?? 'Not Found' }}</td>
                                             <td class="d-none d-md-table-cell">
-                                                @if($course->session)
+                                                {{ $course->class->class_name ?? 'Class #' . $course->class_id }}</td>
+                                            <td class="d-none d-md-table-cell">
+                                                @if ($course->session)
                                                     {{ trim(($course->session->session_type ?? '') . ' ' . ($course->session->session_year ?? '') . ' ' . ($course->session->session_timing ?? '')) }}
                                                 @else
                                                     {{ 'Session #' . $course->session_id }}
@@ -50,10 +62,11 @@
                                             </td>
                                             <td>{{ $course->student_section ?? '-' }}</td>
                                             <td>
-<a href="{{ route('student.courses.show', $course->students_classe_course_id) }}"
-   class="btn btn-sm btn-info">
-    Details
-</a>                                            </td>
+                                                <a href="{{ route('student.courses.show', $course->students_classe_course_id) }}"
+                                                    class="btn btn-sm btn-info">
+                                                    Details
+                                                </a>
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>

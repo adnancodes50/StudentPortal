@@ -56,4 +56,14 @@ class StudentLogIn extends Authenticatable
     {
         return route('student.profile');
     }
+
+
+    public function adminlte_image()
+{
+    return asset('images/placeholder2.png');
+}
+
+
+
+
 }
