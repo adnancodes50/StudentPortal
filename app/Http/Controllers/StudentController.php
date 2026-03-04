@@ -32,6 +32,23 @@ class StudentController extends Controller
     }
 
 
+    public function showCourse($id)
+{
+    $data = $this->resolveStudentDashboardData();
+
+    $course = $data['assignedCourses']
+        ->where('students_classe_course_id', (int) $id)
+        ->first();
+
+    if (!$course) {
+        abort(404, 'Course not found');
+    }
+
+    return view('admin.student-courses.show', array_merge($data, [
+        'course' => $course,
+    ]));
+}
+
     public function viewcources()
     {
         return view('admin.student-courses.index', $this->resolveStudentDashboardData());

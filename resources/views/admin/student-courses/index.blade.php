@@ -50,8 +50,10 @@
                                             </td>
                                             <td>{{ $course->student_section ?? '-' }}</td>
                                             <td>
-                                               <a href="#" class="btn btn-info btn-sm">Details</a> {{-- <a href="{{ route('admin.student-courses.show', $course->id) }}" class="btn btn-sm btn-info">View</a> --}}
-                                            </td>
+<a href="{{ route('student.courses.show', $course->students_classe_course_id) }}"
+   class="btn btn-sm btn-info">
+    Details
+</a>                                            </td>
                                         </tr>
                                     @empty
                                         <tr>

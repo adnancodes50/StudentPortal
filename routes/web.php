@@ -30,3 +30,7 @@ Route::post('student/teacher-evaluation/check-submitted', [TeacherEvalutionContr
     ->name('student.teacher-evaluation.check-submitted');
 Route::post('student/teacher-evaluation/submit', [TeacherEvalutionController::class, 'submit'])
     ->name('student.teacher-evaluation.submit');
+
+
+    Route::get('/admin/student-courses/{id}', [App\Http\Controllers\StudentController::class, 'showCourse'])
+    ->name('student.courses.show');
