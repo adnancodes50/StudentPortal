@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'title' => 'Student Portal',
+    'title' => 'Airline ticket',
     'title_prefix' => '',
     'title_postfix' => '',
 
@@ -63,12 +63,12 @@ return [
     |
     */
 
-    'logo' => '<b>Student</b>Portal',
+    'logo' => '<b>Ticket</b>System',
     'logo_img' => 'images/logo/logo.png',
     'logo_img_class' => 'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'Student Portal Logo',
+    'logo_img_alt' => 'Airline ticket Logo',
 
     /*
     |--------------------------------------------------------------------------
@@ -136,7 +136,7 @@ return [
    'usermenu_enabled' => true,
 'usermenu_header' => true,
 'usermenu_header_class' => 'bg-white',
-'usermenu_image' => 'images/placeholder2.png',
+// 'usermenu_image' => 'images/placeholder2.png',
 'usermenu_desc' => true,
 'usermenu_profile_url' => true,
 
@@ -300,50 +300,49 @@ return [
 
     'menu' => [
 
-        ['header' => 'Student Portal ', 'classes' => 'font-weight-bold text-uppercase text-md'],
-        [
-            'text' => 'dashboard',
-            'url' => 'home',
-            'icon' => 'fas fa-fw fa-tachometer-alt',
-        ],
-        [
-            'text' => 'Courses',
-            'route' => 'student.courses',
-            'icon' => 'fas fa-fw fa-user',
-        ],
+[
+    'text' => 'Dashboard',
+    'url' => 'home',
+    'icon' => 'fas fa-fw fa-tachometer-alt',
+    'can' => 'isAdmin', // ✅ ONLY ADMIN SEE
+],
+[
+    'text' => 'Passengers',
+'url' => '/passengers', 
+    'icon' => 'fas fa-fw fa-tachometer-alt',
+    'can' => 'isAdmin', // ✅ ONLY ADMIN SEE
+],
+
+[
+    'text' => 'Categories',
+    'url' => 'admin/categories',
+    'icon' => 'fas fa-fw fa-list',
+    'can' => 'isAdmin',
+],
+
+
+[
+    'text' => 'Flights',
+    'url' => '/admin/flights',
+    'icon' => 'fas fa-plane',
+    'can' => 'isAdmin',
+],
 
 
 
-        [
-            'text' => 'Time Table',
-            'route' => 'student.timetable',
-            'icon' => 'fas fa-fw fa-calendar-alt',
-        ],
-
-         [
-            'text' => 'Attendence',
-            'route' => 'student.attendence',
-            'icon' => 'fas fa-fw fa-user-check',
-        ],
-
-         [
-            'text' => 'Date Sheet',
-            'route' => 'student.datesheet',
-            'icon' => 'fas fa-fw fa-calendar-day',
-        ],
 
 
-        [
-            'text' => 'Cources Evaluation',
-            'url' => '/course-evaluation',
-            'icon' => 'fas fa-fw fa-book-open',
-        ],
 
-        [
-            'text' => 'Teacher Evaluation',
-            'url' => '/teacher-evaluation',
-            'icon' => 'fas fa-fw fa-chalkboard-teacher',
-        ],
+
+
+
+
+
+
+
+
+
+
 
     ],
 

@@ -12,7 +12,7 @@
             <div class="col-lg-7">
                 <div class="card shadow-sm">
                     <div class="card-body p-4 p-md-5">
-                        <h1 class="h3 mb-3">{{ config('app.name', 'Student Portal') }}</h1>
+                        <h1 class="h3 mb-3">{{ config('app.name', 'Airline ticket') }}</h1>
                         <p class="text-muted mb-4">Bootstrap is active. Tailwind/Vite is disabled for this page.</p>
                         @if (Route::has('login'))
                             @auth

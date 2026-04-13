@@ -12,19 +12,40 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // Gate for course evaluation
-       Gate::define('view-course-evaluation', function ($user) {
+        /*
+        |--------------------------------------------------------------------------
+        | ROLE GATES
+        |--------------------------------------------------------------------------
+        */
 
-    return !DB::table('course_evaluation_reports')
-        ->where('student_id', $user->id)
-        ->exists();
-});
+        // ✅ Admin Gate
+        Gate::define('isAdmin', function ($user) {
+            return $user->type === 'admin';
+        });
 
-Gate::define('view-teacher-evaluation', function ($user) {
+        // ✅ User Gate (optional)
+        Gate::define('isUser', function ($user) {
+            return $user->type === 'user';
+        });
 
-    return !DB::table('teacher_evaluation_reports')
-        ->where('student_id', $user->id)
-        ->exists();
-});
+        /*
+        |--------------------------------------------------------------------------
+        | EXISTING GATES
+        |--------------------------------------------------------------------------
+        */
+
+        // Course Evaluation
+        // Gate::define('view-course-evaluation', function ($user) {
+        //     return !DB::table('course_evaluation_reports')
+        //         ->where('student_id', $user->id)
+        //         ->exists();
+        // });
+
+        // Teacher Evaluation
+        // Gate::define('view-teacher-evaluation', function ($user) {
+        //     return !DB::table('teacher_evaluation_reports')
+        //         ->where('student_id', $user->id)
+        //         ->exists();
+        // });
     }
 }

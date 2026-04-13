@@ -3,64 +3,35 @@
 @section('title', 'Dashboard')
 
 @section('content_header')
-    <div class="d-flex flex-wrap align-items-center justify-content-between">
-        <h1 class="m-0 font-weight-bold">Student Dashboard</h1>
-        {{-- <span class="dashboard-subtitle">Academic Overview</span> --}}
-    </div>
+<div class="d-flex flex-wrap align-items-center justify-content-between">
+    <h1 class="m-0 font-weight-bold">Admin Dashboard</h1>
+    {{-- <span class="dashboard-subtitle">Academic Overview</span> --}}
+</div>
 @stop
 
 @section('content')
-    <div class="container-fluid dashboard-wrap">
-        <div class="row">
-            <div class="col-xl-3 col-md-6 col-12 mb-3">
-                <div class="card stat-card stat-card-courses h-100">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-book-open"></i></div>
-                        <div>
-                            <h4 class="mb-1 font-weight-bold text-truncate">{{ $registeredCoursesCount }}</h4>
-                            <p class="mb-0">Registered Courses</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 col-12 mb-3">
-                <div class="card stat-card stat-card-class h-100">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-school"></i></div>
-                        <div>
-                            <h4 class="mb-1 font-weight-bold text-truncate">{{ $currentClass }}</h4>
-                            <p class="mb-0">Current Class</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 col-12 mb-3">
-                <div class="card stat-card stat-card-semester h-100">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
-                        <div>
-                            <h4 class="mb-1 font-weight-bold text-truncate">{{ $currentSemester }}</h4>
-                            <p class="mb-0">Current Semester</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 col-12 mb-3">
-                <div class="card stat-card stat-card-session h-100">
-                    <div class="card-body">
-                        <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
-                        <div>
-                            <h4 class="mb-1 font-weight-bold stat-session-value">{{ $currentSession }}</h4>
-                            <p class="mb-0">Joining Session</p>
-                        </div>
+<div class="container-fluid dashboard-wrap">
+    <div class="row">
+        <div class="col-xl-3 col-md-6 col-12 mb-3">
+            <div class="card stat-card stat-card-courses h-100">
+                <div class="card-body">
+                    <div class="stat-icon"></div>
+                    <div>
+                        <h4 class="mb-1 font-weight-bold text-truncate">{{ $totalusers }}</h4>
+                        <p class="mb-0">Total Passengers </p>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-@stop
 
-@section('css')
+        <div class="col-xl-3 col-md-6 col-12 mb-3">
+
+
+        </div>
+    </div>
+    @stop
+
+    @section('css')
     <style>
         .dashboard-wrap {
             background: transparent;
@@ -68,7 +39,7 @@
             padding: 0;
         }
 
-        .content-wrapper {
+        /* .content-wrapper {
             background-image:
                 linear-gradient(rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.60)),
                 url('{{ asset('images/logo/logo.png') }}');
@@ -77,7 +48,7 @@
             background-repeat: no-repeat;
             background-attachment: scroll;
 
-        }
+        } */
 
         .dashboard-subtitle {
             font-size: 0.95rem;
@@ -170,4 +141,4 @@
             }
         }
     </style>
-@stop
+    @stop

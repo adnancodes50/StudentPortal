@@ -1,36 +1,53 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\FlightController;
 
-Route::get('/', function () {
+
+Route::get('/', [UserController::class, 'index']);
+Route::get('/category/{id}', [UserController::class, 'show'])->name('category.show');
+
+
+Route::get('/login', function () {
     return view('auth.login');
 });
 
 Auth::routes();
 Route::get('/home', [App\Http\Controllers\StudentController::class, 'index'])->name('home');
-Route::get('/admin/student-courses', [App\Http\Controllers\StudentController::class, 'viewcources'])->name('student.courses');
-Route::get('/timetable', [App\Http\Controllers\StudentController::class, 'timetable'])->name('student.timetable');
-Route::get('/attendence', [App\Http\Controllers\StudentController::class, 'attendence'])->name('student.attendence');
-Route::get('/date-sheet', [App\Http\Controllers\StudentController::class, 'datesheet'])->name('student.datesheet');
-Route::get('/date-sheet/data', [App\Http\Controllers\StudentController::class, 'datesheetData'])->name('student.datesheet.data');
-Route::get('/student/profile', [App\Http\Controllers\StudentController::class, 'profile'])->name('student.profile');
-Route::post('/student/profile/reset-credentials', [App\Http\Controllers\StudentController::class, 'resetCredentials'])->name('student.profile.reset');
-Route::get('/course-evaluation', [App\Http\Controllers\CourcesEvalutionController::class, 'index'])->name('student.course-evaluation');
-Route::post('/course-evaluation/submit', [App\Http\Controllers\CourcesEvalutionController::class, 'submit'])->name('student.course-evaluation.submit');
-Route::get('/teacher-evaluation', [App\Http\Controllers\TeacherEvalutionController::class, 'index'])->name('student.teacher-evaluation');
-Route::post('/teacher-evaluation/submit', [App\Http\Controllers\TeacherEvalutionController::class, 'submit'])->name('student.teacher-evaluation.submit');
-// Course Evaluation Routes
-Route::post('student/course-evaluation/check-submitted', [CourcesEvalutionController::class, 'checkSubmitted'])
-    ->name('student.course-evaluation.check-submitted');
-Route::post('student/course-evaluation/submit', [CourcesEvalutionController::class, 'submit'])
-    ->name('student.course-evaluation.submit');
 
-// Teacher Evaluation Routes
-Route::post('student/teacher-evaluation/check-submitted', [TeacherEvalutionController::class, 'checkSubmitted'])
-    ->name('student.teacher-evaluation.check-submitted');
-Route::post('student/teacher-evaluation/submit', [TeacherEvalutionController::class, 'submit'])
-    ->name('student.teacher-evaluation.submit');
+Route::middleware(['auth', 'admin'])->group(function () {
+
+    Route::get('/passengers', [UserController::class, 'getUsers'])->name('passengers.index');
+
+});
 
 
-    Route::get('/admin/student-courses/{id}', [App\Http\Controllers\StudentController::class, 'showCourse'])
-    ->name('student.courses.show');
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+
+    Route::get('/categories', [CategoryController::class, 'index'])->name('admin.categories.index');
+    Route::post('/categories/store', [CategoryController::class, 'store'])->name('admin.categories.store');
+    Route::put('/categories/update/{id}', [CategoryController::class, 'update'])->name('admin.categories.update');
+    Route::delete('/categories/delete/{id}', [CategoryController::class, 'destroy'])->name('admin.categories.delete');
+
+});
+
+
+
+
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+
+    // Flights
+    Route::get('/flights', [FlightController::class, 'index'])->name('admin.flights.index');
+    Route::get('/flights/create', [FlightController::class, 'create'])->name('admin.flights.create');
+    Route::post('/flights/store', [FlightController::class, 'store'])->name('admin.flights.store');
+
+    Route::get('/flights/edit/{id}', [FlightController::class, 'edit'])->name('admin.flights.edit');
+    Route::post('/flights/update/{id}', [FlightController::class, 'update'])->name('admin.flights.update');
+
+    Route::delete('/flights/delete/{id}', [FlightController::class, 'destroy'])->name('admin.flights.delete');
+
+});
+
+
