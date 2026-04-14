@@ -17,9 +17,9 @@
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Phone</th>
-                    <th>City</th>
-                    <th>Country</th>
+                    {{-- <th>Phone</th> --}}
+                    {{-- <th>City</th> --}}
+                    {{-- <th>Country</th> --}}
                     <th>Status</th>
                     <th>Type</th>
                 </tr>
@@ -31,9 +31,9 @@
                         <td>{{ $user->id }}</td>
                         <td>{{ $user->name }}</td>
                         <td>{{ $user->email }}</td>
-                        <td>{{ $user->phone }}</td>
-                        <td>{{ $user->city }}</td>
-                        <td>{{ $user->country }}</td>
+                        {{-- <td>{{ $user->phone }}</td> --}}
+                        {{-- <td>{{ $user->city }}</td> --}}
+                        {{-- <td>{{ $user->country }}</td> --}}
                         <td>{{ $user->status }}</td>
                         <td>
                             @if($user->type === 'admin')

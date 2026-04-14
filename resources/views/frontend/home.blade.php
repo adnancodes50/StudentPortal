@@ -1,86 +1,42 @@
-@extends('layouts.app')
+@extends('frontend.layouts.app')
+
+@section('title', 'Home - ' . config('app.name', 'Student Portal'))
 
 @section('content')
+    <section class="portal-hero py-5" style="--hero-bg: url('{{ asset('images/portal-bg.jpg') }}');">
+        <div class="container py-4">
+            <div class="text-center mb-4 mb-lg-5">
+                <div class="portal-kicker mb-2">Group Ticketing Portal</div>
+                <h1 class="portal-title display-5 mb-0 text-uppercase">
+                    {{ config('app.name', 'Airline Ticket System') }}
+                </h1>
+            </div>
 
-
-{{-- Hero Section --}}
-@include('frontend.herosection')
-
-<style>
-    /* ===== Category Card Styling ===== */
-    .category-card {
-        border-radius: 15px;
-        overflow: hidden;
-        transition: 0.3s;
-        cursor: pointer;
-        position: relative;
-    }
-
-    .category-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .category-card img {
-        width: 100%;
-        height: 220px;
-        object-fit: cover;
-    }
-
-    .category-title {
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        background: #ffffff;
-        text-align: center;
-        padding: 12px;
-        font-weight: 600;
-        font-size: 16px;
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .category-card img {
-            height: 180px;
-        }
-    }
-</style>
-
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Welcome to Airline Ticket System ✈️</h2>
-
-    {{-- Categories --}}
-    @if(isset($categories) && $categories->count())
-        <div class="row">
-            @foreach($categories as $category)
-                <div class="col-md-4 col-sm-6 mb-4">
-                    <div class="category-card">
-
-                        {{-- Image --}}
-                        @if($category->image)
-                            <img src="{{ Storage::url($category->image) }}">
-                        @else
-                            <img src="https://via.placeholder.com/400x250">
-                        @endif
-
-                        {{-- Title --}}
-                        <div class="category-title">
-                            {{ $category->name }}
-                        </div>
-
-                        {{-- Clickable --}}
-                        <a href="{{ route('category.show', $category->id) }}" class="stretched-link"></a>
-
+            <div class="portal-panel" id="categories">
+                @if (isset($categories) && $categories->count())
+                    <div class="row g-4">
+                        @foreach ($categories as $category)
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <div class="portal-category position-relative h-100">
+                                    @php
+                                        $imageUrl = $category->image ? Storage::url($category->image) : 'https://via.placeholder.com/1200x800?text=Category';
+                                    @endphp
+                                    <img src="{{ $imageUrl }}" alt="{{ $category->name }}">
+                                    <div class="portal-category-label">{{ $category->name }}</div>
+                                    <a href="{{ route('category.show', $category->id) }}" class="stretched-link"
+                                        aria-label="Open {{ $category->name }}"></a>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
-                </div>
-            @endforeach
+                @else
+                    <div class="text-center text-white">
+                        <div class="fw-semibold">No categories found</div>
+                        <div class="text-white-50 small mt-1">Add categories from the admin panel and mark them active.</div>
+                    </div>
+                @endif
+            </div>
         </div>
-    @else
-        <p class="text-center text-muted">No categories found.</p>
-    @endif
-</div>
-
-
+    </section>
 @endsection
+

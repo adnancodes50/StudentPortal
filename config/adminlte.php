@@ -329,6 +329,21 @@ return [
 ],
 
 
+[
+    'text' => 'Hotels',
+    'url' => '/admin/hotels',
+    'icon' => 'fas fa-bed',
+    'can' => 'isAdmin',
+],
+
+
+[
+    'text' => 'Bank',
+    'url' => '/admin/banks',
+    'icon' => 'fas fa-building',
+    'can' => 'isAdmin',
+],
+
 
 
 

@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\FlightController;
+use App\Http\Controllers\BankController;
+use App\Http\Controllers\Admin\HotelController;
 
 
 Route::get('/', [UserController::class, 'index']);
@@ -44,10 +46,23 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/flights/store', [FlightController::class, 'store'])->name('admin.flights.store');
 
     Route::get('/flights/edit/{id}', [FlightController::class, 'edit'])->name('admin.flights.edit');
-    Route::post('/flights/update/{id}', [FlightController::class, 'update'])->name('admin.flights.update');
+    Route::put('/flights/update/{id}', [FlightController::class, 'update'])->name('admin.flights.update');
 
     Route::delete('/flights/delete/{id}', [FlightController::class, 'destroy'])->name('admin.flights.delete');
 
+
+     Route::get('/banks', [BankController::class, 'index'])->name('admin.banks.index');
+
+    Route::post('/banks/store', [BankController::class, 'store'])->name('admin.banks.store');
+
+    Route::put('/banks/update/{id}', [BankController::class, 'update'])->name('admin.banks.update');
+
+    Route::delete('/banks/delete/{id}', [BankController::class, 'destroy'])->name('admin.banks.delete');
+
+    Route::get('/hotels', [HotelController::class, 'index'])->name('admin.hotels.index');
+Route::post('/hotels/store', [HotelController::class, 'store'])->name('admin.hotels.store');
+Route::put('/hotels/update/{id}', [HotelController::class, 'update'])->name('admin.hotels.update');
+Route::delete('/hotels/delete/{id}', [HotelController::class, 'destroy'])->name('admin.hotels.delete');
 });
 
 
