@@ -257,7 +257,7 @@ return [
     */
 
     'use_route_url' => false,
-    'dashboard_url' => 'home',
+    'dashboard_url' => 'admin/dashboard',
     'logout_url' => 'logout',
     'login_url' => 'login',
     'register_url' => 'register',
@@ -299,66 +299,121 @@ return [
     */
 
     'menu' => [
+        [
+            'text' => 'Dashboard',
+            'url' => 'admin/dashboard',
+            'icon' => 'fas fa-fw fa-tachometer-alt',
+            'can' => 'isAdmin',
+        ],
+        [
+            'text' => 'Dashboard',
+            'url' => 'agent/dashboard',
+            'icon' => 'fas fa-fw fa-tachometer-alt',
+            'can' => 'isAgent',
+        ],
 
-[
-    'text' => 'Dashboard',
-    'url' => 'home',
-    'icon' => 'fas fa-fw fa-tachometer-alt',
-    'can' => 'isAdmin', // ✅ ONLY ADMIN SEE
-],
-[
-    'text' => 'Passengers',
-'url' => '/passengers', 
-    'icon' => 'fas fa-fw fa-tachometer-alt',
-    'can' => 'isAdmin', // ✅ ONLY ADMIN SEE
-],
+        ['header' => 'MANAGEMENT', 'can' => 'isAdmin'],
+        [
+            'text' => 'Users & Agents',
+            'url' => 'admin/users',
+            'icon' => 'fas fa-fw fa-users',
+            'can' => 'isAdmin',
+        ],
+        [
+            'text' => 'Reports & Analysis',
+            'url' => 'admin/reports/agents',
+            'icon' => 'fas fa-fw fa-chart-line',
+            'can' => 'isAdmin',
+        ],
+        [
+            'text' => 'Bookings',
+            'url' => 'admin/bookings',
+            'icon' => 'fas fa-fw fa-suitcase-rolling',
+            'can' => 'isAdmin',
+        ],
+        // [
+        //     'text' => 'Passengers',
+        //     'url' => 'passengers',
+        //     'icon' => 'fas fa-fw fa-id-card',
+        //     'can' => 'isAdmin',
+        // ],
 
-[
-    'text' => 'Categories',
-    'url' => 'admin/categories',
-    'icon' => 'fas fa-fw fa-list',
-    'can' => 'isAdmin',
-],
+        // ['header' => 'SERVICES', 'can' => 'isAdmin'],
+        // [
+        //     'text' => 'Umrah',
+        //     'icon' => 'fas fa-fw fa-kaaba',
+        //     'can' => 'isAdmin',
+        //     'submenu' => [
+        //         ['text' => 'Packages', 'url' => 'admin/umrah/packages', 'icon' => 'fas fa-fw fa-box'],
+        //         ['text' => 'Bookings', 'url' => 'admin/umrah/bookings', 'icon' => 'fas fa-fw fa-list'],
+        //     ],
+        // ],
+        // [
+        //     'text' => 'Visa',
+        //     'url' => 'admin/visa',
+        //     'icon' => 'fas fa-fw fa-passport',
+        //     'can' => 'isAdmin',
+        // ],
+        // [
+        //     'text' => 'Group Bookings',
+        //     'url' => 'admin/groups',
+        //     'icon' => 'fas fa-fw fa-users-cog',
+        //     'can' => 'isAdmin',
+        // ],
+        // [
+        //     'text' => 'Insurance',
+        //     'url' => 'admin/insurance',
+        //     'icon' => 'fas fa-fw fa-shield-alt',
+        //     'can' => 'isAdmin',
+        // ],
 
+        // ['header' => 'FINANCE', 'can' => 'isAdmin'],
+        // [
+        //     'text' => 'Wallet / Ledger',
+        //     'url' => 'admin/wallet',
+        //     'icon' => 'fas fa-fw fa-wallet',
+        //     'can' => 'isAdmin',
+        // ],
+        // [
+        //     'text' => 'Payments',
+        //     'url' => 'admin/payments',
+        //     'icon' => 'fas fa-fw fa-money-check-alt',
+        //     'can' => 'isAdmin',
+        // ],
 
-[
-    'text' => 'Flights',
-    'url' => '/admin/flights',
-    'icon' => 'fas fa-plane',
-    'can' => 'isAdmin',
-],
+        // ['header' => 'MASTER DATA', 'can' => 'isAdmin'],
+        [
+            'text' => 'Categories',
+            'url' => 'admin/categories',
+            'icon' => 'fas fa-fw fa-list',
+            'can' => 'isAdmin',
+        ],
+        [
+            'text' => 'Flights',
+            'url' => 'admin/flights',
+            'icon' => 'fas fa-plane',
+            'can' => 'isAdmin',
+        ],
+        [
+            'text' => 'Hotels',
+            'url' => 'admin/hotels',
+            'icon' => 'fas fa-bed',
+            'can' => 'isAdmin',
+        ],
+        [
+            'text' => 'Banks',
+            'url' => 'admin/banks',
+            'icon' => 'fas fa-building',
+            'can' => 'isAdmin',
+        ],
 
-
-[
-    'text' => 'Hotels',
-    'url' => '/admin/hotels',
-    'icon' => 'fas fa-bed',
-    'can' => 'isAdmin',
-],
-
-
-[
-    'text' => 'Bank',
-    'url' => '/admin/banks',
-    'icon' => 'fas fa-building',
-    'can' => 'isAdmin',
-],
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // ['header' => 'AGENT MODULES', 'can' => 'isAgent'],
+        // [
+        //     'text' => 'My Dashboard',
+        //     'url' => 'agent/dashboard',
+        //     'icon' => 'fas fa-fw fa-chart-pie',
+        //     'can' => 'isAgent',
+        // ],
     ],
 
     /*
@@ -397,7 +452,7 @@ return [
 
     'plugins' => [
         'Datatables' => [
-            'active' => false,
+            'active' => true,
             'files' => [
                 [
                     'type' => 'js',

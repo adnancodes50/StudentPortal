@@ -11,24 +11,16 @@ class Flight extends Model
         'flight_number',
         'departure_city',
         'arrival_city',
-
-        // NEW FIELDS 👇
         'departure_date',
         'return_date',
         'departure_time',
         'arrival_time',
         'baggage_kg',
-
-        'category_id'
+        'origin_airport_code',
+        'destination_airport_code',
+        'duration_minutes',
+        'status',
     ];
-
-    /**
-     * Relationship: Flight belongs to Category
-     */
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
 
     /**
      * Relationship: Flight has many prices

@@ -21,7 +21,7 @@
                     {{-- <th>City</th> --}}
                     {{-- <th>Country</th> --}}
                     <th>Status</th>
-                    <th>Type</th>
+                    <th>Role</th>
                 </tr>
             </thead>
 
@@ -35,13 +35,7 @@
                         {{-- <td>{{ $user->city }}</td> --}}
                         {{-- <td>{{ $user->country }}</td> --}}
                         <td>{{ $user->status }}</td>
-                        <td>
-                            @if($user->type === 'admin')
-                                <span class="badge bg-danger">Admin</span>
-                            @else
-                                <span class="badge bg-success">User</span>
-                            @endif
-                        </td>
+                        <td><span class="badge bg-secondary text-uppercase">{{ $user->role ?? $user->type ?? 'user' }}</span></td>
                     </tr>
                 @endforeach
             </tbody>

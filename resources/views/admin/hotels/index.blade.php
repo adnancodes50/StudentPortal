@@ -23,6 +23,7 @@
                     <th>ID</th>
                     <th>Name</th>
                     <th>City</th>
+                    <th>Rooms</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -33,6 +34,10 @@
                     <td>{{ $hotel->name }}</td>
                     <td>{{ $hotel->city }}</td>
                     <td>
+                        <span class="badge bg-info">{{ $hotel->rooms->count() }}</span>
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-info" href="{{ route('admin.hotels.show', $hotel->id) }}">View</a>
                         <button class="btn btn-sm btn-warning editBtn"
                             data-id="{{ $hotel->id }}"
                             data-name="{{ $hotel->name }}"

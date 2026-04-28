@@ -22,11 +22,11 @@ class User extends Authenticatable
     'email',
     'password',
     'phone',
-    'city',
-    'country',
+    'passport_no',
+    'address',
     'status',
-        'type', // ✅ ADD THIS
-
+    'type',
+    'role',
 ];
 
     /**
@@ -65,6 +65,11 @@ public function adminlte_image()
 
 public function adminlte_desc()
 {
-    return $this->email; // or role, etc.
+    return $this->email;
+}
+
+public function hasRole(string $role): bool
+{
+    return ($this->role ?? $this->type) === $role;
 }
 }

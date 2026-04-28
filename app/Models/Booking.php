@@ -7,8 +7,25 @@ use Illuminate\Database\Eloquent\Model;
 class Booking extends Model
 {
     protected $fillable = [
-        'user_id', 'category_id', 'booking_no', 'booking_type', 'total_amount', 'status'
+        'agent_id',
+        'user_id',
+        'category_id',
+        'booking_no',
+        'reference_no',
+        'booking_type', // umrah, visa, insurance, group, package
+        'total_amount',
+        'status',
+        'notes',
     ];
+
+    protected $casts = [
+        'total_amount' => 'decimal:2',
+    ];
+
+    public function agent()
+    {
+        return $this->belongsTo(User::class, 'agent_id');
+    }
 
     public function user()
     {

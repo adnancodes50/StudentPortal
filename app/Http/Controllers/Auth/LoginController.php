@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
 
 class LoginController extends Controller
 {
@@ -19,6 +20,17 @@ class LoginController extends Controller
 
     public function username()
     {
-        return 'email'; // ✅ FIXED
+        return 'email';
+    }
+
+    protected function authenticated(Request $request, $user)
+    {
+        $role = $user->role ?? $user->type;
+
+        return redirect()->to(match ($role) {
+            'admin' => '/admin/dashboard',
+            'agent' => '/agent/dashboard',
+            default => '/user/dashboard',
+        });
     }
 }

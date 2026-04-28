@@ -41,8 +41,17 @@ return [
             'provider' => 'users',
         ],
 
-
          'admin' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        'agent' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        'user' => [
             'driver' => 'session',
             'provider' => 'users',
         ],
